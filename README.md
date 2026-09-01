@@ -1,6 +1,17 @@
-# KidTimeline 儿童时间轴时钟
+# 🕐 KidTimeline · 儿童时间轴时钟
 
-为学龄前儿童（2-5 岁）设计的时间可视化时钟，帮孩子直观感受「时间流逝」和「一天作息」。
+> 为 2–5 岁孩子设计的「时间可视化挂钟」——让孩子不靠识字，也能看懂「现在该干嘛、还要等多久」。
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Built with Svelte](https://img.shields.io/badge/Built%20with-Svelte-ff3e00?logo=svelte&logoColor=white)](https://svelte.dev)
+[![PWA Ready](https://img.shields.io/badge/PWA-Ready-5a0fc8?logo=pwa&logoColor=white)](https://web.dev/progressive-web-apps/)
+[![Node](https://img.shields.io/badge/Node-20%2B-339933?logo=node.js&logoColor=white)](https://nodejs.org)
+
+底座基于 [Tot Clock](https://github.com/basnijholt/tot-clock)（MIT）改造为挂钟模型。
+
+---
+
+## ✨ 功能亮点
 
 - **线性时间轴**：黄色直条 = 白天，蓝色弧线 = 睡觉（跨夜闭环）
 - **图标节点**：每个活动一个节点（emoji + 颜色），不依赖识字
@@ -10,11 +21,17 @@
 - **蜂鸣提醒**：「嘀-嘀-嘀」三短音，可关
 - **多设备同步**：局域网内手机改配置，平板实时同步
 
-> 底座基于 [Tot Clock](https://github.com/basnijholt/tot-clock)（MIT），改造为挂钟模型。
+## 📸 截图
 
----
+> 占位：把真实截图放进 `docs/screenshots/` 后，替换下方路径即可（设计稿可先在浏览器打开预览）。
 
-## 快速开始
+| 主界面 | 家长面板 |
+|--------|----------|
+| `docs/screenshots/main.png`（待补充） | `docs/screenshots/parent-panel.png`（待补充） |
+
+设计稿预览：`docs/design/01-主界面设计稿.html`、`docs/design/02-家长面板设计稿.html`
+
+## 🚀 快速开始
 
 ### 开发模式
 
@@ -44,9 +61,7 @@ node server/index.js
 npm test
 ```
 
----
-
-## 多设备使用
+## 📱 多设备使用
 
 1. 电脑/平板启动服务（挂墙设备直接打开 http://localhost:3010/）
 2. 手机连接同一局域网，访问 `http://<电脑IP>:3010/`
@@ -55,9 +70,7 @@ npm test
 
 查询电脑 IP：Windows 命令行执行 `ipconfig`，取「IPv4 地址」。
 
----
-
-## 家长面板操作
+## 🛠 家长面板操作
 
 | 操作 | 说明 |
 |------|------|
@@ -69,9 +82,7 @@ npm test
 | 添加节点 | 底部选活动 → 点「+ 添加节点」 |
 | 蜂鸣开关 | 「蜂鸣提醒」分组里开关 + 试听 |
 
----
-
-## 目录结构
+## 📂 目录结构
 
 ```
 src/
@@ -85,6 +96,7 @@ src/
 │   ├── stores/timer.ts           # 配置 store + 多设备同步
 │   └── components/
 │       ├── Timeline.svelte       # 线性时间轴视图
+│       ├── Onboarding.svelte     # 首次引导
 │       └── ParentPanel.svelte    # 家长面板
 server/
 └── index.js                      # Node 零依赖服务（API + SSE + 静态服务）
@@ -94,11 +106,26 @@ public/
 └── icon.svg                      # 图标
 ```
 
----
+## 🤝 贡献指南
 
-## 已知限制
+欢迎提 Issue 和 Pull Request！
+
+1. Fork 本仓库并 `git clone` 到本地
+2. 从 `main` 切出功能分支：`git checkout -b feature/你的功能`
+3. 提交改动：`git commit -m "feat: 简述改动"`
+4. 推送分支：`git push origin feature/你的功能`
+5. 在 GitHub 发起 Pull Request 到 `main`，描述改动与测试情况
+6. 评审通过后由维护者合并
+
+> 提交信息建议遵循 [Conventional Commits](https://www.conventionalcommits.org/)（如 `feat:` / `fix:` / `docs:` / `chore:`）。
+
+## 📋 已知限制
 
 - Android Chrome 后台会节流定时器，但挂墙场景页面始终前台，影响不大
 - iOS 需手动「添加到主屏幕」，Android 自动提示
 - 时间轴基于设备本地时间，时区变化后自动重新计算
 - 数据不出局域网，存于 `server/data/state.json`
+
+## 📄 许可证
+
+[MIT](LICENSE) © Renzy
