@@ -1,0 +1,13 @@
+# 依赖（npm install 自动下载，体积大，重装即可还原，不提交）
+node_modules/
+
+# 构建产物（npm run build 自动生成，不提交）
+dist/
+
+# 运行时用户数据（家长面板里改的作息，每次运行都会变，不提交）
+server/data/state.json
+
+# 系统/编辑器垃圾文件
+.DS_Store
+Thumbs.db
+*.local

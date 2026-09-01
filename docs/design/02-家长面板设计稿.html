@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>儿童时间轴时钟 - 家长面板设计稿</title>
+<style>
+  body { margin: 0; padding: 20px; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; background: #f5f5f5; }
+  h1 { text-align: center; color: #333; }
+  .mockup-title { text-align: center; color: #666; font-size: 14px; margin-bottom: 20px; }
+</style>
+</head>
+<body>
+<h1>儿童时间轴时钟 - 家长面板设计稿</h1>
+<div class="mockup-title">长按左上角齿轮图标2秒进入，可配置作息、调整节点、设置提醒</div>
+<svg viewBox="0 0 680 560" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  
+  <!-- 背景 -->
+  <rect width="680" height="560" fill="#f5f5f5"/>
+  
+  <!-- 家长面板主体 -->
+  <g transform="translate(90, 30)">
+    <!-- 面板背景 -->
+    <rect x="0" y="0" width="500" height="500" fill="#fff" rx="16" filter="url(#shadow)"/>
+    
+    <!-- 标题栏 -->
+    <rect x="0" y="0" width="500" height="50" fill="#4a90e2" rx="16"/>
+    <rect x="0" y="25" width="500" height="25" fill="#4a90e2"/>
+    <text x="250" y="32" font-size="18" font-weight="bold" text-anchor="middle" fill="#fff">家长控制面板</text>
+    
+    <!-- 关闭按钮（右上角） -->
+    <g transform="translate(465, 15)">
+      <circle cx="15" cy="15" r="15" fill="#fff" opacity="0.3"/>
+      <line x1="10" y1="10" x2="20" y2="20" stroke="#fff" stroke-width="2"/>
+      <line x1="20" y1="10" x2="10" y2="20" stroke="#fff" stroke-width="2"/>
+    </g>
+    
+    <!-- 第一区：作息时间设置 -->
+    <g transform="translate(20, 70)">
+      <text x="0" y="0" font-size="14" font-weight="bold" fill="#333">⏰ 作息时间</text>
+      
+      <!-- 起床时间 -->
+      <g transform="translate(0, 20)">
+        <text x="0" y="15" font-size="13" fill="#666">起床时间</text>
+        <rect x="100" y="0" width="80" height="30" fill="#f5f5f5" stroke="#ddd" stroke-width="1" rx="6"/>
+        <text x="140" y="20" font-size="14" text-anchor="middle" fill="#333" font-weight="bold">07:30</text>
+        <polygon points="170,10 175,5 180,10" fill="#999"/>
+        <polygon points="170,20 175,25 180,20" fill="#999"/>
+      </g>
+      
+      <!-- 睡觉时间 -->
+      <g transform="translate(240, 20)">
+        <text x="0" y="15" font-size="13" fill="#666">睡觉时间</text>
+        <rect x="100" y="0" width="80" height="30" fill="#f5f5f5" stroke="#ddd" stroke-width="1" rx="6"/>
+        <text x="140" y="20" font-size="14" text-anchor="middle" fill="#333" font-weight="bold">20:30</text>
+        <polygon points="170,10 175,5 180,10" fill="#999"/>
+        <polygon points="170,20 175,25 180,20" fill="#999"/>
+      </g>
+    </g>
+    
+    <!-- 第二区：今日作息表 -->
+    <g transform="translate(20, 140)">
+      <text x="0" y="0" font-size="14" font-weight="bold" fill="#333">📋 今日作息表</text>
+      <text x="0" y="18" font-size="11" fill="#999">拖拽节点调整顺序，点击图标修改活动</text>
+      
+      <!-- 节点列表 -->
+      <g transform="translate(0, 30)">
+        <!-- 节点1：起床 -->
+        <g transform="translate(0, 0)">
+          <rect x="0" y="0" width="460" height="40" fill="#fafafa" stroke="#e0e0e0" stroke-width="1" rx="6"/>
+          <circle cx="15" cy="20" r="6" fill="#ccc" cursor="grab"/>
+          <circle cx="15" cy="15" r="1.5" fill="#999"/>
+          <circle cx="15" cy="20" r="1.5" fill="#999"/>
+          <circle cx="15" cy="25" r="1.5" fill="#999"/>
+          <text x="35" y="26" font-size="11" fill="#666">07:30</text>
+          <circle cx="95" cy="20" r="15" fill="#4a90e2"/>
+          <text x="95" y="26" font-size="14" text-anchor="middle">🛏️</text>
+          <text x="120" y="26" font-size="13" fill="#333">起床</text>
+          <rect x="340" y="8" width="50" height="24" fill="#f0f0f0" stroke="#ddd" stroke-width="1" rx="4"/>
+          <text x="365" y="25" font-size="12" text-anchor="middle" fill="#666">必须</text>
+          <rect x="400" y="8" width="50" height="24" fill="#ff4444" rx="4"/>
+          <text x="425" y="25" font-size="12" text-anchor="middle" fill="#fff">删除</text>
+        </g>
+        
+        <!-- 节点2：早饭 -->
+        <g transform="translate(0, 50)">
+          <rect x="0" y="0" width="460" height="40" fill="#fafafa" stroke="#e0e0e0" stroke-width="1" rx="6"/>
+          <circle cx="15" cy="20" r="6" fill="#ccc" cursor="grab"/>
+          <circle cx="15" cy="15" r="1.5" fill="#999"/>
+          <circle cx="15" cy="20" r="1.5" fill="#999"/>
+          <circle cx="15" cy="25" r="1.5" fill="#999"/>
+          <text x="35" y="26" font-size="11" fill="#666">08:00</text>
+          <circle cx="95" cy="20" r="15" fill="#ff9800"/>
+          <text x="95" y="26" font-size="14" text-anchor="middle">🍽️</text>
+          <text x="120" y="26" font-size="13" fill="#333">早饭</text>
+          <rect x="340" y="8" width="50" height="24" fill="#f0f0f0" stroke="#ddd" stroke-width="1" rx="4"/>
+          <text x="365" y="25" font-size="12" text-anchor="middle" fill="#666">必须</text>
+          <rect x="400" y="8" width="50" height="24" fill="#ff4444" rx="4"/>
+          <text x="425" y="25" font-size="12" text-anchor="middle" fill="#fff">删除</text>
+        </g>
+        
+        <!-- 节点3：玩玩具 -->
+        <g transform="translate(0, 100)">
+          <rect x="0" y="0" width="460" height="40" fill="#fafafa" stroke="#e0e0e0" stroke-width="1" rx="6"/>
+          <circle cx="15" cy="20" r="6" fill="#ccc" cursor="grab"/>
+          <circle cx="15" cy="15" r="1.5" fill="#999"/>
+          <circle cx="15" cy="20" r="1.5" fill="#999"/>
+          <circle cx="15" cy="25" r="1.5" fill="#999"/>
+          <text x="35" y="26" font-size="11" fill="#666">09:00</text>
+          <circle cx="95" cy="20" r="15" fill="#7cb342"/>
+          <text x="95" y="26" font-size="14" text-anchor="middle">🧸</text>
+          <text x="120" y="26" font-size="13" fill="#333">玩玩具</text>
+          <rect x="340" y="8" width="50" height="24" fill="#f0f0f0" stroke="#ddd" stroke-width="1" rx="4"/>
+          <text x="365" y="25" font-size="12" text-anchor="middle" fill="#666">自由</text>
+          <rect x="400" y="8" width="50" height="24" fill="#ff4444" rx="4"/>
+          <text x="425" y="25" font-size="12" text-anchor="middle" fill="#fff">删除</text>
+        </g>
+        
+        <!-- 节点4：午饭 -->
+        <g transform="translate(0, 150)">
+          <rect x="0" y="0" width="460" height="40" fill="#fafafa" stroke="#e0e0e0" stroke-width="1" rx="6"/>
+          <circle cx="15" cy="20" r="6" fill="#ccc" cursor="grab"/>
+          <circle cx="15" cy="15" r="1.5" fill="#999"/>
+          <circle cx="15" cy="20" r="1.5" fill="#999"/>
+          <circle cx="15" cy="25" r="1.5" fill="#999"/>
+          <text x="35" y="26" font-size="11" fill="#666">12:00</text>
+          <circle cx="95" cy="20" r="15" fill="#ff9800"/>
+          <text x="95" y="26" font-size="14" text-anchor="middle">🍽️</text>
+          <text x="120" y="26" font-size="13" fill="#333">午饭</text>
+          <rect x="340" y="8" width="50" height="24" fill="#f0f0f0" stroke="#ddd" stroke-width="1" rx="4"/>
+          <text x="365" y="25" font-size="12" text-anchor="middle" fill="#666">必须</text>
+          <rect x="400" y="8" width="50" height="24" fill="#ff4444" rx="4"/>
+          <text x="425" y="25" font-size="12" text-anchor="middle" fill="#fff">删除</text>
+        </g>
+        
+        <!-- 节点5：睡觉 -->
+        <g transform="translate(0, 200)">
+          <rect x="0" y="0" width="460" height="40" fill="#fafafa" stroke="#e0e0e0" stroke-width="1" rx="6"/>
+          <circle cx="15" cy="20" r="6" fill="#ccc" cursor="grab"/>
+          <circle cx="15" cy="15" r="1.5" fill="#999"/>
+          <circle cx="15" cy="20" r="1.5" fill="#999"/>
+          <circle cx="15" cy="25" r="1.5" fill="#999"/>
+          <text x="35" y="26" font-size="11" fill="#666">20:30</text>
+          <circle cx="95" cy="20" r="15" fill="#4a90e2"/>
+          <text x="95" y="26" font-size="14" text-anchor="middle">🌙</text>
+          <text x="120" y="26" font-size="13" fill="#333">睡觉</text>
+          <rect x="340" y="8" width="50" height="24" fill="#f0f0f0" stroke="#ddd" stroke-width="1" rx="4"/>
+          <text x="365" y="25" font-size="12" text-anchor="middle" fill="#666">必须</text>
+          <rect x="400" y="8" width="50" height="24" fill="#ff4444" rx="4"/>
+          <text x="425" y="25" font-size="12" text-anchor="middle" fill="#fff">删除</text>
+        </g>
+        
+        <!-- 添加节点按钮 -->
+        <g transform="translate(0, 250)">
+          <rect x="0" y="0" width="460" height="36" fill="#4a90e2" rx="6" cursor="pointer"/>
+          <text x="230" y="23" font-size="14" font-weight="bold" text-anchor="middle" fill="#fff">+ 添加新节点</text>
+        </g>
+      </g>
+    </g>
+    
+    <!-- 第三区：提醒设置 -->
+    <g transform="translate(20, 430)">
+      <text x="0" y="0" font-size="14" font-weight="bold" fill="#333">🔔 提醒设置</text>
+      
+      <g transform="translate(0, 15)">
+        <!-- 开关：提前5分钟提醒 -->
+        <text x="0" y="15" font-size="13" fill="#666">提前5分钟提醒</text>
+        <rect x="200" y="0" width="40" height="22" fill="#4a90e2" rx="11"/>
+        <circle cx="229" cy="11" r="9" fill="#fff"/>
+        
+        <!-- 开关：蜂鸣声音 -->
+        <text x="280" y="15" font-size="13" fill="#666">蜂鸣声音</text>
+        <rect x="380" y="0" width="40" height="22" fill="#4a90e2" rx="11"/>
+        <circle cx="409" cy="11" r="9" fill="#fff"/>
+      </g>
+    </g>
+  </g>
+</svg>
+</body>
+</html>

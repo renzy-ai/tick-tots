@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>儿童时间轴时钟 - 主界面设计稿</title>
+<style>
+  body { margin: 0; padding: 20px; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; background: #f5f5f5; }
+  h1 { text-align: center; color: #333; }
+  .mockup-title { text-align: center; color: #666; font-size: 14px; margin-bottom: 20px; }
+</style>
+</head>
+<body>
+<h1>儿童时间轴时钟 - 主界面设计稿</h1>
+<div class="mockup-title">三种状态：已过去（灰）、当前（高亮呼吸）、未来（饱满）；睡觉蓝色弧线跨夜闭环</div>
+<svg viewBox="0 0 680 560" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="sleepGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#6bb6ff;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#4a90e2;stop-opacity:1"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  
+  <rect width="680" height="560" fill="#f5f5f5"/>
+  
+  <!-- 左上角齿轮图标（半透明，长按2秒进家长面板） -->
+  <g transform="translate(20, 20)" opacity="0.2">
+    <circle cx="15" cy="15" r="12" fill="none" stroke="#666" stroke-width="2"/>
+    <circle cx="15" cy="15" r="6" fill="none" stroke="#666" stroke-width="2"/>
+    <line x1="15" y1="3" x2="15" y2="0" stroke="#666" stroke-width="2"/>
+    <line x1="15" y1="30" x2="15" y2="27" stroke="#666" stroke-width="2"/>
+    <line x1="3" y1="15" x2="0" y2="15" stroke="#666" stroke-width="2"/>
+    <line x1="30" y1="15" x2="27" y2="15" stroke="#666" stroke-width="2"/>
+  </g>
+  
+  <!-- 标题区 -->
+  <text x="340" y="40" font-size="22" font-weight="bold" text-anchor="middle" fill="#333">儿童时间轴时钟</text>
+  <text x="340" y="65" font-size="14" text-anchor="middle" fill="#666">今天：周六，8月28日</text>
+  
+  <!-- 时间轴主体 -->
+  <g transform="translate(40, 220)">
+    <!-- 睡觉弧（蓝色，从右端绕回左端形成闭环） -->
+    <path d="M 600 0 Q 650 60, 600 120 L 0 120 Q -50 60, 0 0 Z" fill="url(#sleepGrad)" opacity="0.3"/>
+    <path d="M 600 0 Q 650 60, 600 120" fill="none" stroke="#4a90e2" stroke-width="3" stroke-dasharray="5,5"/>
+    <path d="M 0 120 Q -50 60, 0 0" fill="none" stroke="#4a90e2" stroke-width="3" stroke-dasharray="5,5"/>
+    
+    <!-- 黄色直条（白天时间线） -->
+    <rect x="0" y="0" width="600" height="50" fill="#ffd93d" rx="6"/>
+    
+    <!-- 已过去部分（灰色去饱和） -->
+    <rect x="0" y="0" width="240" height="50" fill="#d0d0d0" rx="6" opacity="0.6"/>
+    
+    <!-- 当前节点（高亮呼吸动画） -->
+    <rect x="220" y="-5" width="70" height="60" fill="#7cb342" stroke="#ff6b35" stroke-width="3" rx="6" filter="url(#glow)">
+      <animate attributeName="stroke-width" values="3;5;3" dur="2s" repeatCount="indefinite"/>
+    </rect>
+    
+    <!-- 7:30 起床（已过去） -->
+    <g transform="translate(0, 0)">
+      <rect x="0" y="0" width="50" height="50" fill="#ffd93d" stroke="#fff" stroke-width="2" rx="4" opacity="0.5"/>
+      <text x="25" y="22" font-size="20" text-anchor="middle" opacity="0.5">🛏️</text>
+      <text x="25" y="42" font-size="9" text-anchor="middle" fill="#666" opacity="0.5">7:30</text>
+    </g>
+    
+    <!-- 8:00 早饭（已过去） -->
+    <g transform="translate(60, 0)">
+      <rect x="0" y="0" width="50" height="50" fill="#ffd93d" stroke="#fff" stroke-width="2" rx="4" opacity="0.5"/>
+      <text x="25" y="22" font-size="20" text-anchor="middle" opacity="0.5">🍽️</text>
+      <text x="25" y="42" font-size="9" text-anchor="middle" fill="#666" opacity="0.5">8:00</text>
+    </g>
+    
+    <!-- 9:00 玩玩具（当前，高亮） -->
+    <g transform="translate(220, -5)">
+      <rect x="0" y="0" width="70" height="60" fill="#7cb342" stroke="#ff6b35" stroke-width="3" rx="6"/>
+      <text x="35" y="26" font-size="24" text-anchor="middle">🧸</text>
+      <text x="35" y="48" font-size="11" text-anchor="middle" fill="#fff" font-weight="bold">9:00</text>
+    </g>
+    
+    <!-- 10:30 点心（未来） -->
+    <g transform="translate(300, 0)">
+      <rect x="0" y="0" width="50" height="50" fill="#ffd93d" stroke="#fff" stroke-width="2" rx="4"/>
+      <text x="25" y="22" font-size="20" text-anchor="middle">🍪</text>
+      <text x="25" y="42" font-size="9" text-anchor="middle" fill="#666">10:30</text>
+    </g>
+    
+    <!-- 12:00 午饭（未来，必须做=实线粗框） -->
+    <g transform="translate(360, 0)">
+      <rect x="0" y="0" width="50" height="50" fill="#ff9800" stroke="#e65100" stroke-width="3" rx="4"/>
+      <text x="25" y="22" font-size="20" text-anchor="middle">🍽️</text>
+      <text x="25" y="42" font-size="9" text-anchor="middle" fill="#fff" font-weight="bold">12:00</text>
+    </g>
+    
+    <!-- 13:00 午睡（未来） -->
+    <g transform="translate(420, 0)">
+      <rect x="0" y="0" width="50" height="50" fill="#4a90e2" stroke="#fff" stroke-width="2" rx="4"/>
+      <text x="25" y="22" font-size="20" text-anchor="middle">💤</text>
+      <text x="25" y="42" font-size="9" text-anchor="middle" fill="#fff">13:00</text>
+    </g>
+    
+    <!-- 18:00 晚饭（未来，必须做） -->
+    <g transform="translate(480, 0)">
+      <rect x="0" y="0" width="50" height="50" fill="#ff9800" stroke="#e65100" stroke-width="3" rx="4"/>
+      <text x="25" y="22" font-size="20" text-anchor="middle">🍽️</text>
+      <text x="25" y="42" font-size="9" text-anchor="middle" fill="#fff" font-weight="bold">18:00</text>
+    </g>
+    
+    <!-- 20:30 睡觉（未来） -->
+    <g transform="translate(540, 0)">
+      <rect x="0" y="0" width="60" height="50" fill="#4a90e2" stroke="#fff" stroke-width="2" rx="4"/>
+      <text x="30" y="22" font-size="20" text-anchor="middle">🌙</text>
+      <text x="30" y="42" font-size="9" text-anchor="middle" fill="#fff">20:30</text>
+    </g>
+    
+    <!-- 时间标签 -->
+    <text x="0" y="80" font-size="12" fill="#666" font-weight="bold">7:30 起床</text>
+    <text x="600" y="80" font-size="12" fill="#666" font-weight="bold" text-anchor="end">20:30 睡觉</text>
+  </g>
+  
+  <!-- 自适应精度显示（最后10分钟大字红橙） -->
+  <g transform="translate(340, 420)">
+    <rect x="-140" y="-35" width="280" height="70" fill="#fff" stroke="#ff6b35" stroke-width="3" rx="10"/>
+    <text x="0" y="0" font-size="28" text-anchor="middle" fill="#ff6b35" font-weight="bold">
+      还有最后<tspan fill="#ff3d00" font-size="36"> 8 </tspan>分钟
+    </text>
+    <text x="0" y="25" font-size="13" text-anchor="middle" fill="#666">下一个活动：刷牙 🦷</text>
+  </g>
+  
+  <!-- 图例 -->
+  <g transform="translate(40, 500)">
+    <rect x="0" y="0" width="16" height="16" fill="#d0d0d0" opacity="0.6"/>
+    <text x="22" y="13" font-size="11" fill="#666">已过去</text>
+    
+    <rect x="100" y="0" width="16" height="16" fill="#7cb342" stroke="#ff6b35" stroke-width="2"/>
+    <text x="122" y="13" font-size="11" fill="#666">当前</text>
+    
+    <rect x="180" y="0" width="16" height="16" fill="#ffd93d"/>
+    <text x="202" y="13" font-size="11" fill="#666">未来</text>
+    
+    <rect x="260" y="0" width="16" height="16" fill="#ff9800" stroke="#e65100" stroke-width="3"/>
+    <text x="282" y="13" font-size="11" fill="#666">必须做</text>
+    
+    <rect x="360" y="0" width="16" height="16" fill="#4a90e2" opacity="0.3"/>
+    <text x="382" y="13" font-size="11" fill="#666">睡觉</text>
+  </g>
+</svg>
+</body>
+</html>

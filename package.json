@@ -1,0 +1,34 @@
+{
+  "name": "kid-timeline",
+  "private": true,
+  "version": "1.0.0",
+  "description": "学龄前儿童时间轴可视化时钟",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "server": "node server/index.js",
+    "start": "npm run server & npm run dev",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^6.2.1",
+    "@tsconfig/svelte": "^5.0.6",
+    "@types/node": "^24.10.1",
+    "svelte": "^5.43.8",
+    "svelte-check": "^4.3.4",
+    "typescript": "~5.9.3",
+    "vite": "^7.2.4"
+  },
+  "keywords": [
+    "kids",
+    "timeline",
+    "clock",
+    "preschool",
+    "svelte"
+  ],
+  "author": "Renzy",
+  "license": "MIT"
+}

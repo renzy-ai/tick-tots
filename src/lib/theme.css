@@ -1,0 +1,64 @@
+/*
+  KidTimeline Design Tokens
+
+  单一色值来源。改这里 = 改全局。
+  TS 侧对应：src/lib/activities.ts 的 palette（两处需同步）。
+*/
+
+:root {
+  /* ---- 类别色（6 类，与规范 §2.1 一致）---- */
+  --c-eating: #f0997b; /* 进食：珊瑚橙 */
+  --c-sleep: #85b7eb; /* 睡眠：冷蓝 */
+  --c-play: #97c459; /* 玩耍：草绿 */
+  --c-hygiene: #5dcaa5; /* 卫生/自理：青 */
+  --c-study: #afa9ec; /* 学习：紫 */
+  --c-outing: #fac775; /* 外出：暖黄 */
+
+  /* ---- 时间轴 ---- */
+  /* 直条用中性奶油色：主背景跟随当前活动变色，纯黄(#ffd93d)会在黄/橙系活动时与背景融掉 */
+  --track-day: #ffefc2;
+  --track-day-stroke: rgba(255, 255, 255, 0.9);
+  --track-past: rgba(15, 23, 42, 0.22); /* 已过去：压暗而非铺灰，奶油底上更清楚 */
+  --track-ruler: rgba(120, 90, 20, 0.32);
+  --track-ruler-label: #8a6d1f;
+
+  --sleep-arc-from: #6bb6ff;
+  --sleep-arc-to: #4a90e2;
+  --sleep-arc-opacity: 0.3;
+
+  /* ---- 状态色 ---- */
+  --c-cursor: #ef4444; /* 当前时间游标 */
+  --c-current: #ff6b35; /* 当前节点描边 */
+  --c-urgent: #ff5a2b; /* 最后阶段 */
+
+  /* ---- 夜间（睡觉时段）---- */
+  --night-bg-from: #1a1a2e;
+  --night-bg-to: #16213e;
+  --night-text: #e8eefc;
+  --night-dim: rgba(232, 238, 252, 0.62);
+  --night-track-ruler: rgba(232, 238, 252, 0.28);
+  --night-track-ruler-label: rgba(232, 238, 252, 0.6);
+  --night-sleep-arc-opacity: 0.5;
+
+  /* ---- 字体 ---- */
+  /* 系统字体栈：零加载、零闪动、中文原生支持。儿童界面优先稳与快 */
+  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --font-num: 'SF Mono', 'Menlo', 'Consolas', 'Courier New', monospace;
+
+  /* ---- 圆角/间距（8px 基线）---- */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 18px;
+}
+
+/* 尊重系统「减少动态效果」：关掉所有装饰性动画，只保留位置/数据变化（规范 §9.3） */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "KidTimeline 儿童时间轴",
+  "short_name": "时间轴",
+  "description": "为学龄前儿童设计的时间可视化时钟：线性时间轴 + 图标节点，让孩子看懂一天作息",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#FFEFC2",
+  "theme_color": "#378ADD",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
