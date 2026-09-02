@@ -23,11 +23,32 @@
 
 ## 📸 截图
 
-> 占位：把真实截图放进 `docs/screenshots/` 后，替换下方路径即可（设计稿可先在浏览器打开预览）。
+### 🌙 夜间模式（21:30–07:30 自动切换）
 
-| 主界面 | 家长面板 |
-|--------|----------|
-| `docs/screenshots/main.png`（待补充） | `docs/screenshots/parent-panel.png`（待补充） |
+![夜间星空：月亮柔光晕 + 两侧繁星 + 划过夜空的流星](docs/screenshots/night-sky.png)
+
+> 睡觉时段主屏自动切到深色夜空：🌙 居中带柔和光晕，左右两侧空白区铺满轻闪烁的星星，不时划过流星。
+> `prefers-reduced-motion` 下流星和闪烁会自动关闭。
+
+### ☀️ 白天主界面
+
+![白天主界面：当前活动大图标 + 剩余时间 + 线性时间轴](docs/screenshots/main-day.png)
+
+> 当前活动用大 emoji + 中文名展示，节点按"已过去 / 进行中 / 未来"三态渲染，时间轴显示全天安排。
+
+### ⚙️ 家长面板
+
+长按主屏左上角 2 秒进入，所有可调项都在这里：
+
+| ![](docs/screenshots/parent-schedule.png) | ![](docs/screenshots/parent-beep.png) |
+|:---:|:---:|
+| **作息编辑**：工作日 / 周末两套，拖拽排序节点 | **蜂鸣提醒 + 显示精度**：开关 / 提前时长 / 音量 / 重复 / 阈值 |
+
+![时间轴比例调节 + 一天边界](docs/screenshots/parent-scale.png)
+
+> **时间轴比例**：在「纯等比」与「最大化可读」间连续调节，下方实时预览当天时间轴的样子。
+
+---
 
 设计稿预览：`docs/design/01-主界面设计稿.html`、`docs/design/02-家长面板设计稿.html`
 
