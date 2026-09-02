@@ -83,7 +83,7 @@ async function loadSchedulesFromServer(): Promise<{
       }
     }
   } catch (e) {
-    console.warn('[KidTimeline] 服务端作息读取失败，使用本地配置:', e);
+    console.warn('[TickTots] 服务端作息读取失败，使用本地配置:', e);
   }
   return null;
 }
@@ -98,7 +98,7 @@ async function loadSettingsFromServer(): Promise<Settings | null> {
       }
     }
   } catch (e) {
-    console.warn('[KidTimeline] 服务端设置读取失败:', e);
+    console.warn('[TickTots] 服务端设置读取失败:', e);
   }
   return null;
 }
@@ -113,7 +113,7 @@ async function saveSchedulesToServer(): Promise<void> {
       })
     });
   } catch (e) {
-    console.warn('[KidTimeline] 服务端作息保存失败:', e);
+    console.warn('[TickTots] 服务端作息保存失败:', e);
   }
 }
 
@@ -125,7 +125,7 @@ async function saveSettingsToServer(settings: Settings): Promise<void> {
       body: JSON.stringify(settings)
     });
   } catch (e) {
-    console.warn('[KidTimeline] 服务端设置保存失败:', e);
+    console.warn('[TickTots] 服务端设置保存失败:', e);
   }
 }
 
@@ -141,7 +141,7 @@ function loadScheduleFromStorage(key: string, fallback: TimelineConfig): Timelin
       }
     }
   } catch (e) {
-    console.warn('[KidTimeline] 本地作息读取失败:', e);
+    console.warn('[TickTots] 本地作息读取失败:', e);
   }
   return fallback;
 }
@@ -153,7 +153,7 @@ function loadSettingsFromStorage(): Settings {
       return { ...defaultSettings, ...JSON.parse(saved) };
     }
   } catch (e) {
-    console.warn('[KidTimeline] 本地设置读取失败:', e);
+    console.warn('[TickTots] 本地设置读取失败:', e);
   }
   return defaultSettings;
 }
@@ -172,6 +172,12 @@ export const weekendConfig = writable<TimelineConfig>(
 
 /** 当前时间，每秒 tick 一次，驱动所有派生状态（不持久化） */
 export const currentTime = writable<Date>(new Date());
+
+/**
+ * 开发预览用：手动设定的"当前分钟"，null = 跟随真实时间。
+ * 仅 DEV 环境生效（setManualTime 内部有守卫）；正式构建里 UI 被剔除、且不会被调用。
+ */
+export const manualTime = writable<number | null>(null);
 
 /** 设置项（蜂鸣开关等） */
 export const settings = writable<Settings>(loadSettingsFromStorage());
@@ -288,7 +294,7 @@ weekdayConfig.subscribe((config) => {
   try {
     localStorage.setItem(WEEKDAY_KEY, JSON.stringify(config));
   } catch (e) {
-    console.warn('[KidTimeline] 本地工作日作息保存失败:', e);
+    console.warn('[TickTots] 本地工作日作息保存失败:', e);
   }
   scheduleChanged();
 });
@@ -297,7 +303,7 @@ weekendConfig.subscribe((config) => {
   try {
     localStorage.setItem(WEEKEND_KEY, JSON.stringify(config));
   } catch (e) {
-    console.warn('[KidTimeline] 本地周末作息保存失败:', e);
+    console.warn('[TickTots] 本地周末作息保存失败:', e);
   }
   scheduleChanged();
 });
@@ -306,7 +312,7 @@ settings.subscribe((s) => {
   try {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
   } catch (e) {
-    console.warn('[KidTimeline] 本地设置保存失败:', e);
+    console.warn('[TickTots] 本地设置保存失败:', e);
   }
   if (settingsSaveTimer) clearTimeout(settingsSaveTimer);
   settingsSaveTimer = setTimeout(() => saveSettingsToServer(s), 1000);
@@ -364,9 +370,31 @@ export const currentTimeStr = derived(currentTime, ($now) =>
 
 // ====== Actions ======
 
+/** 把"当天分钟数"转为今天该时刻的 Date（用于开发预览冻结时间） */
+function minutesToDate(min: number): Date {
+  const d = new Date();
+  d.setHours(Math.floor(min / 60) % 24, min % 60, 0, 0);
+  return d;
+}
+
 /** 每秒调用，更新当前时间（挂钟模型下时间只会前进，无需补偿漂移） */
 export function tick(): void {
-  currentTime.set(new Date());
+  const mt = get(manualTime);
+  // 开发预览：手动设定了时间则冻结在该时刻，方便看夜间/各时段效果
+  if (import.meta.env.DEV && mt !== null) {
+    currentTime.set(minutesToDate(mt));
+  } else {
+    currentTime.set(new Date());
+  }
+}
+
+/**
+ * 开发预览：覆盖"当前时间"。
+ * 正式版（import.meta.env.DEV === false）直接忽略，从根上保证生产环境无法被篡改。
+ */
+export function setManualTime(min: number | null): void {
+  if (!import.meta.env.DEV) return;
+  manualTime.set(min);
 }
 
 /** 更新"当前正在编辑"的那套作息 */

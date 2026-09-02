@@ -1,8 +1,8 @@
 {
-  "name": "kid-timeline",
+  "name": "tick-tots",
   "private": true,
   "version": "1.0.0",
-  "description": "学龄前儿童时间轴可视化时钟",
+  "description": "学龄前儿童时间陪伴时钟——不靠识字也能看懂现在该干嘛",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -24,9 +24,10 @@
   },
   "keywords": [
     "kids",
-    "timeline",
     "clock",
     "preschool",
+    "schedule",
+    "companion",
     "svelte"
   ],
   "author": "Renzy",

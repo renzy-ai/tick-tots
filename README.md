@@ -1,4 +1,4 @@
-# 🕐 KidTimeline · 儿童时间轴时钟
+# 🕐 滴答童行 (TickTots) · 儿童时间陪伴时钟
 
 > 为 2–5 岁孩子设计的「时间可视化挂钟」——让孩子不靠识字，也能看懂「现在该干嘛、还要等多久」。
 
@@ -36,7 +36,7 @@
 ### 开发模式
 
 ```bash
-cd D:\KidTimeline
+cd tick-tots
 npm install
 npm run server      # 终端 1：启动后端（端口 3010）
 npm run dev         # 终端 2：启动前端（端口 5173，/api 自动代理到 3010）

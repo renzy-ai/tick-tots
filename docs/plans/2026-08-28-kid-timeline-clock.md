@@ -1,4 +1,4 @@
-# 儿童时间轴时钟实现计划
+# 滴答童行实现计划
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
@@ -13,7 +13,7 @@
 ## 前置条件
 
 - [x] 需求规格 v3 已锁定（D1-D14 全部确认）
-- [ ] 项目目录 `D:\KidTimeline` 已创建
+- [ ] 项目目录 `tick-tots` 已创建
 - [ ] Node.js v22 可用
 - [ ] Tot Clock 源码在 `D:\Tot Clock` 可供参考
 
@@ -26,7 +26,7 @@
 **Step 1.1: 创建 package.json**
 
 ```bash
-cd "D:/KidTimeline"
+cd "tick-tots"
 ```
 
 创建 `package.json`：
@@ -115,7 +115,7 @@ export default {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>儿童时间轴时钟</title>
+  <title>滴答童行</title>
 </head>
 <body>
   <div id="app"></div>
@@ -143,7 +143,7 @@ export default app
   let count = $state(0)
 </script>
 
-<h1>儿童时间轴时钟</h1>
+<h1>滴答童行</h1>
 <button onclick={() => count++}>
   点击次数: {count}
 </button>
@@ -172,7 +172,7 @@ Expected: 输出 `Local: http://localhost:5173/`
 
 **Step 1.9: 验证**
 
-打开浏览器访问 `http://localhost:5173/`，应看到"儿童时间轴时钟"标题和按钮。
+打开浏览器访问 `http://localhost:5173/`，应看到"滴答童行"标题和按钮。
 
 **Step 1.10: 提交**
 
@@ -1437,7 +1437,7 @@ git commit -m "feat: 实现局域网同步与访问口令"
 创建 `public/manifest.json`：
 ```json
 {
-  "name": "儿童时间轴时钟",
+  "name": "滴答童行",
   "short_name": "时间轴",
   "start_url": "/",
   "display": "standalone",
@@ -1495,7 +1495,7 @@ self.addEventListener('fetch', event => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#f59e0b">
   <link rel="manifest" href="/manifest.json">
-  <title>儿童时间轴时钟</title>
+  <title>滴答童行</title>
 </head>
 <body>
   <div id="app"></div>
@@ -1569,7 +1569,7 @@ git commit -m "test: 端到端测试完成，修复问题"
 
 ## 开发完成
 
-**恭喜！** 儿童时间轴时钟 v1 已完成。
+**恭喜！** 滴答童行 v1 已完成。
 
 **下一步：**
 1. 在家长面板中调整真实的作息时间

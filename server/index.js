@@ -1,5 +1,5 @@
 /**
- * KidTimeline 服务端
+ * 滴答童行 服务端
  *
  * 职责：
  * 1. 提供 /api/state、/api/settings 读写作息配置（JSON 文件持久化）
@@ -247,5 +247,5 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`KidTimeline 服务已启动: http://localhost:${PORT}/`);
+  console.log(`滴答童行 服务已启动: http://localhost:${PORT}/`);
 });

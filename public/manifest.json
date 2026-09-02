@@ -1,7 +1,7 @@
 {
-  "name": "KidTimeline 儿童时间轴",
-  "short_name": "时间轴",
-  "description": "为学龄前儿童设计的时间可视化时钟：线性时间轴 + 图标节点，让孩子看懂一天作息",
+  "name": "滴答童行 TickTots",
+  "short_name": "滴答童行",
+  "description": "为学龄前儿童设计的时间陪伴时钟：可视化时间条 + 图标节点，让孩子看懂一天作息",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

@@ -1,5 +1,5 @@
 <!--
-  KidTimeline 主应用
+  滴答童行 主应用
 
   挂钟模型：当前活动由「当前时间」实时推算，不保存倒计时状态。
   布局：当前活动大字 → 剩余时间（自适应精度）→ 线性时间轴
@@ -9,6 +9,7 @@
   import Timeline from './lib/components/Timeline.svelte';
   import ParentPanel from './lib/components/ParentPanel.svelte';
   import Onboarding from './lib/components/Onboarding.svelte';
+  import NightSky from './lib/components/NightSky.svelte';
   import { getActivity } from './lib/activities';
   import { nodeDuration } from './lib/timeline';
   import {
@@ -23,7 +24,9 @@
     tick,
     initializeFromServer,
     initEditScheduleType,
-    formatRemaining
+    formatRemaining,
+    manualTime,
+    setManualTime
   } from './lib/stores/timer';
   import { checkReminders, unlockAudio } from './lib/beeper';
 
@@ -33,6 +36,18 @@
 
   let config = $derived($timelineConfig);
   let node = $derived($currentNode);
+
+  /** 开发模式（vite dev 为真，生产构建为 false，UI 会被整体剔除） */
+  const devMode = import.meta.env.DEV;
+
+  /** 开发预览：右上角时间输入框的双向展示值（手动态显示设定值，实时态跟随真实时间） */
+  const toMin = (v: string) => {
+    const [h, m] = v.split(':').map(Number);
+    return (h || 0) * 60 + (m || 0);
+  };
+  const minToStr = (min: number) =>
+    `${String(Math.floor(min / 60) % 24).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
+  let devTimeValue = $derived($manualTime !== null ? minToStr($manualTime) : $currentTimeStr);
   let activity = $derived(node ? getActivity(node.activity) : null);
   let nextActivity = $derived($nextNode ? getActivity($nextNode.activity) : null);
   let remain = $derived($remainingSeconds);
@@ -162,6 +177,9 @@
   ontouchend={handleDoubleTap}
   role="application"
 >
+  <!-- 夜间星空装饰层：仅睡觉时段浮现，铺在内容之下 -->
+  <NightSky night={isSleep} />
+
   <!-- 顶部：当前时间放右上（醒目）+ 今日作息时段（右下次要） -->
   <div class="clock-bar">
     <div class="clock-right">
@@ -171,6 +189,28 @@
       {/if}
     </div>
   </div>
+
+  <!-- 开发预览：修改"当前时间"以预览夜间/各时段（仅 DEV 显示，正式版不可用）
+       作为 <main> 直接子元素绝对定位，脱离 clock-bar 文档流（高度与正式版一致），
+       且 z-index 高于内容层，浮在上方、可点击、不压住"今日作息"文字 -->
+  {#if devMode}
+    <div class="dev-time">
+      <input
+        class="dev-time-input"
+        type="time"
+        value={devTimeValue}
+        oninput={(e) => {
+          const v = (e.currentTarget as HTMLInputElement).value;
+          if (v) setManualTime(toMin(v));
+        }}
+        aria-label="开发预览：修改当前时间"
+        title="开发模式：修改当前时间以预览不同时段（正式版不可用）"
+      />
+      {#if $manualTime !== null}
+        <button class="dev-time-reset" type="button" onclick={() => setManualTime(null)}>↺实时</button>
+      {/if}
+    </div>
+  {/if}
 
   <!-- 当前活动 -->
   <div class="now-section">
@@ -311,6 +351,53 @@
     font-size: 13px;
     color: rgba(255, 255, 255, 0.55);
     font-variant-numeric: tabular-nums;
+  }
+
+  /* 开发预览：右上角"修改当前时间"控件（仅 DEV 出现）
+     绝对定位、脱离文档流，锚在时钟下方右上角空白处；
+     不增加 clock-bar 高度（开发版与正式版中间布局一致）；
+     z-index 高于内容层(2)，浮在上方可点击、不压住文字 */
+  .dev-time {
+    position: absolute;
+    top: 96px;
+    right: 24px;
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    pointer-events: auto;
+  }
+
+  .dev-time-input {
+    font-family: var(--font-num);
+    font-size: 13px;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 6px;
+    padding: 2px 6px;
+    width: 86px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .dev-time-input::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    opacity: 0.7;
+    cursor: pointer;
+  }
+
+  .dev-time-reset {
+    font-size: 12px;
+    color: #cfe3ff;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 6px;
+    padding: 2px 8px;
+    cursor: pointer;
+  }
+
+  .dev-time-reset:hover {
+    background: rgba(255, 255, 255, 0.2);
   }
 
   /* 工作日/周末：低调灰字，居中挂在齿轮（设置入口）正下方，强制单行不换行 */

@@ -1,5 +1,5 @@
 /*
-  KidTimeline Design Tokens
+  滴答童行 Design Tokens
 
   单一色值来源。改这里 = 改全局。
   TS 侧对应：src/lib/activities.ts 的 palette（两处需同步）。
