@@ -215,7 +215,10 @@
   <!-- 当前活动 -->
   <div class="now-section">
     {#if activity && node}
-      <div class="activity-icon">{activity.icon}</div>
+      <div class="activity-icon">
+        {#if isSleep}<span class="moon-glow" aria-hidden="true"></span>{/if}
+        {activity.icon}
+      </div>
       <div class="activity-name">{activity.name}</div>
       <div class="time-info">
         {#if isSleep}
@@ -438,10 +441,31 @@
   }
 
   .activity-icon {
+    position: relative; /* 作为月亮光晕的定位上下文 */
     font-size: min(22vw, 130px);
     line-height: 1;
     filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.22));
     animation: gentle-float 3s ease-in-out infinite;
+  }
+
+  /* 月亮柔光晕：居中贴在 🌙 图标本身（跟随 now-section 实际位置，不再写死视口坐标） */
+  .moon-glow {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle,
+      rgba(214, 230, 255, 0.22) 0%,
+      rgba(180, 205, 245, 0.09) 38%,
+      transparent 72%
+    );
+    filter: blur(5px);
+    pointer-events: none;
+    z-index: -1; /* 在 emoji 之下、星空之上 */
   }
 
   @keyframes gentle-float {

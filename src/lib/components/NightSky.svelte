@@ -27,9 +27,8 @@
     };
   }
 
-  /** 月亮中心（与 now-section 中 🌙 大致对齐：水平居中、偏上） */
+  /** 月亮水平中心（星星布局时避开正中窄带，让月亮"干净"） */
   const MOON_X = 50;
-  const MOON_Y = 40;
 
   type Star = {
     x: number;
@@ -77,9 +76,6 @@
   <!-- 深邃感：角落两团极淡星云 -->
   <div class="nebula nebula-a"></div>
   <div class="nebula nebula-b"></div>
-
-  <!-- 月亮柔光晕（让中央 🌙 像发光月亮，营造层次） -->
-  <div class="moon-halo" style="left: {MOON_X}%; top: {MOON_Y}%"></div>
 
   <!-- 偶尔划过的流星（不频繁、安静，助眠不刺激） -->
   <div class="shooting-star s1"><span class="tail"></span></div>
@@ -145,21 +141,6 @@
       rgba(120, 92, 168, 0.3) 0%,
       transparent 65%
     );
-  }
-
-  /* ---- 月亮柔光晕（缩小到 220px，避免压过星星）---- */
-  .moon-halo {
-    position: absolute;
-    width: 220px;
-    height: 220px;
-    transform: translate(-50%, -50%);
-    background: radial-gradient(
-      circle,
-      rgba(214, 230, 255, 0.2) 0%,
-      rgba(180, 205, 245, 0.09) 38%,
-      transparent 72%
-    );
-    filter: blur(5px);
   }
 
   /* ---- 流星：细尾 + 亮头，沿对角线掠过，长周期里只在极短窗口可见 ---- */
