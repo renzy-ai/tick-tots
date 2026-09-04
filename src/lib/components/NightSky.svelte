@@ -160,7 +160,7 @@
       rgba(255, 255, 255, 0) 0%,
       rgba(255, 255, 255, 0.95) 100%
     );
-    transform: rotate(24deg);
+    transform: rotate(30deg);
     transform-origin: right center;
     filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.85));
   }
@@ -183,6 +183,8 @@
     animation: shoot 26s ease-in 14s infinite;
   }
 
+  /* 位移横竖都用 vw：飞行角度（约 30°）不随屏幕比例变化，
+     宽屏也不会被压成"横着飞"；始终从屏幕一端斜穿到另一端 */
   @keyframes shoot {
     0% {
       opacity: 0;
@@ -193,15 +195,15 @@
     }
     7% {
       opacity: 1;
-      transform: translate(240px, 120px);
+      transform: translate(110vw, 64vw);
     }
     9% {
       opacity: 0;
-      transform: translate(260px, 130px);
+      transform: translate(125vw, 72vw);
     }
     100% {
       opacity: 0;
-      transform: translate(260px, 130px);
+      transform: translate(125vw, 72vw);
     }
   }
 
