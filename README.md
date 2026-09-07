@@ -150,3 +150,9 @@ public/
 ## 📄 许可证
 
 [MIT](LICENSE) © Renzy
+
+---
+
+## 👤 关于作者
+
+我是 **Renzy**（AI 产品经理）· 公众号 **「PM 的 AI 进阶之路」**（微信搜 `renzy-ai`）。更多项目与 AI / 职场思考，见我的 [GitHub 主页](https://github.com/renzy-ai)。
