@@ -32,7 +32,9 @@
     currentConfig,
     enablePersist,
     applyImportedConfig,
-    hydrateFromConfig
+    hydrateFromConfig,
+    ensureLocalInit,
+    loadConfigFromStorage
   } from '../stores/timer';
   import { TEMPLATES, templateConfig, type TemplateKey } from '../templates';
   import { encodeConfig } from '../share';
@@ -48,6 +50,17 @@
   let shareOpen = $state(false);
   let shareConfig = $state<Config | null>(null);
   let nodeLimitMsg = $state('');
+
+  // ====== 进门快照（供「取消」回滚） ======
+  // 先保证 store 已初始化再拍照：首次加载时本组件可能早于 App.onMount 跑起来，
+  // 不先 ensureLocalInit 会拍到未加载的默认模板，取消时会把家长已存的配置冲掉。
+  // 另外 updateConfig 一动手改就开落盘，所以「取消」必须按快照回滚，
+  // 不能只是返回——否则随手改动会留在 localStorage 里。
+  ensureLocalInit();
+  const entryConfig = currentConfig();
+  const entryJson = JSON.stringify(entryConfig);
+  /** 有已保存的配置才谈得上「取消返回展示页」；首次使用没有可回去的展示页 */
+  const hasDisplay = loadConfigFromStorage() !== null;
 
   // ====== 模板 ======
 
@@ -149,10 +162,15 @@
     return null;
   }
 
-  function handleGenerate() {
-    const err =
+  function validateAll(): string | null {
+    return (
       validateNodes($weekdayConfig.nodes) ??
-      ($weekendEnabled ? validateNodes($weekendConfig.nodes) : null);
+      ($weekendEnabled ? validateNodes($weekendConfig.nodes) : null)
+    );
+  }
+
+  function handleGenerate() {
+    const err = validateAll();
     if (err) {
       alert(err);
       return;
@@ -163,6 +181,28 @@
     sessionStorage.setItem('ticktots.share', '1');
     const c = currentConfig();
     location.hash = `#/view?c=${encodeConfig(c)}`;
+  }
+
+  /** 保存：落盘并回展示页（不生成分享链接——那是「生成我家的时间轴」的事） */
+  function handleSave() {
+    const err = validateAll();
+    if (err) {
+      alert(err);
+      return;
+    }
+    trackConfigSaved();
+    enablePersist();
+    location.hash = '#/view';
+  }
+
+  /** 取消：不保存本次修改，回展示页（有改动先确认，再按进门快照回滚） */
+  function handleCancel() {
+    const dirty = JSON.stringify(currentConfig()) !== entryJson;
+    if (dirty) {
+      if (!confirm('放弃这次的修改？')) return;
+      hydrateFromConfig(entryConfig);
+    }
+    location.hash = '#/view';
   }
 
   // ====== 导出 / 导入 ======
@@ -408,6 +448,16 @@
       <pre class="dev-meta">DEV 埋点自检：{JSON.stringify(meta)}</pre>
     {/if}
   </footer>
+
+  <!-- 底部操作条（固定在视口底部）：取消 / 保存随手可点，不用翻到页底找按钮 -->
+  <div class="action-bar">
+    <div class="action-bar-inner">
+      {#if hasDisplay}
+        <button class="btn ghost bar-btn" onclick={handleCancel} title="放弃本次修改并返回展示页">取消</button>
+      {/if}
+      <button class="btn primary bar-btn bar-save" onclick={handleSave} title="保存修改并返回展示页">保存</button>
+    </div>
+  </div>
 </div>
 
 {#if shareConfig}
@@ -418,7 +468,8 @@
   .setup {
     min-height: 100vh;
     background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-    padding: 28px 16px 80px;
+    /* 底部留出固定操作条的高度，隐私声明不被压住 */
+    padding: 28px 16px 120px;
   }
 
   .hero {
@@ -770,6 +821,35 @@
   .btn.ghost {
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  /* 底部操作条：固定视口底部，长表单翻到哪都能取消 / 保存 */
+  .action-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    background: rgba(15, 23, 42, 0.92);
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .action-bar-inner {
+    display: flex;
+    gap: 10px;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .bar-btn {
+    padding: 14px 22px;
+  }
+
+  .bar-save {
+    flex: 1;
   }
 
   .sub-actions {

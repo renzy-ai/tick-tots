@@ -35,6 +35,9 @@
   const VB_W = 1000;
   // 底部裁掉空白（睡觉节点圆底到 271）：同样宽度下时间轴更高、内容更大
   const VB_H = 272;
+  // 睡觉弧两端的贝塞尔圆角会画到 0..VB_W 之外（控制点外凸，实际到约 -8.5..1008.5），
+  // overflow:visible 时会顶出屏幕边缘，viewBox 左右各留 12 单位把它们收进来
+  const VB_PAD = 12;
   const TRACK_Y = 115; // 黄色直条中心线
   const TRACK_H = 50; // 直条高度
   const TRACK_LEFT = 6;
@@ -246,7 +249,7 @@
   class:night={inNight}
   class:size-md={size === 'md'}
   class:size-sm={size === 'sm'}
-  viewBox="0 0 {VB_W} {VB_H}"
+  viewBox="{-VB_PAD} 0 {VB_W + VB_PAD * 2} {VB_H}"
   preserveAspectRatio="xMidYMid meet"
 >
   <defs>
