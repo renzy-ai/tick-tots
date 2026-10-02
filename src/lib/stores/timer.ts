@@ -4,6 +4,10 @@
  * 与 Tot Clock 的顺序倒计时模型不同：这里不保存"还剩多少秒"，
  * 而是保存作息配置（两套：工作日 + 周末），当前活动由「当前时间」实时推算。
  * 平时按星期几自动切换显示哪一套；家长面板可单独编辑其中一套。
+ *
+ * 网页版 MVP（《嘀嗒童行_MVP开发规格_v1.md》第 7 节）：
+ * **零后端**。配置持久化为 localStorage + 链接携带，不再有服务端 / SSE。
+ * 新旧模型转换走 adapter.ts，timeline.ts 纯函数不动。
  */
 
 import { writable, derived, get } from 'svelte/store';
@@ -20,15 +24,23 @@ import {
   timeToMinutes,
   minutesToTime
 } from '../timeline';
+import type { Config } from '../types';
+import { isValidConfig } from '../validate';
+import {
+  configToTimelineConfigs,
+  timelineConfigsToConfig
+} from '../adapter';
+import { decodeConfig, extractParam } from '../share';
+import { templateConfig } from '../templates';
 
 export type ScheduleType = 'weekday' | 'weekend';
 
-const WEEKDAY_KEY = 'kid-timeline-weekday-v1';
-const WEEKEND_KEY = 'kid-timeline-weekend-v1';
-const SETTINGS_KEY = 'kid-timeline-settings-v1';
+/** L1 本地存储（文档 7.1）：Config 全量 + UI 偏好 */
+const CONFIG_KEY = 'ticktots.config';
+const SETTINGS_KEY = 'ticktots.settings';
 
 export interface Settings {
-  /** 蜂鸣提醒开关 */
+  /** 蜂鸣提醒开关（与 Config.b 同步；文档 4.2 默认关） */
   beepEnabled?: boolean;
   /** 提前提醒分钟数 */
   beepLeadMinutes?: number;
@@ -38,8 +50,6 @@ export interface Settings {
   beepDuration?: number;
   /** 重复遍数：整段提醒模式循环播几遍（1~5） */
   beepRepeat?: number;
-  /** 访问口令（可选，留空表示不启用） */
-  accessCode?: string;
   /** 放大提醒阈值（秒）：剩余 ≤ 此值时进入"soon"放大态，默认 600s（10 分钟） */
   soonSeconds?: number;
   /** 紧急提醒阈值（秒）：剩余 ≤ 此值时进入"urgent"紧急态，默认 300s（5 分钟） */
@@ -53,97 +63,28 @@ export interface Settings {
 }
 
 const defaultSettings: Settings = {
-  beepEnabled: true,
+  beepEnabled: false,
   beepLeadMinutes: 5,
   beepVolume: 0.5,
   beepDuration: 0.35,
   beepRepeat: 2,
-  accessCode: '',
   soonSeconds: 600,
   urgentSeconds: 300,
   scaleBias: 0.85
 };
 
-// ====== 持久化：服务端（存两套：weekday + weekend） ======
+// ====== 持久化：localStorage（Config 格式，一次读写全量） ======
 
-async function loadSchedulesFromServer(): Promise<{
-  weekday: TimelineConfig;
-  weekend: TimelineConfig;
-} | null> {
+/** 读取本地 Config；损坏 / 不存在都返回 null（绝不抛异常） */
+export function loadConfigFromStorage(): Config | null {
   try {
-    const res = await fetch('/api/state');
-    if (res.ok) {
-      const data = await res.json();
-      const cfg = data?.config;
-      if (cfg?.weekday?.nodes?.length || cfg?.weekend?.nodes?.length) {
-        return {
-          weekday: { ...defaultWeekdayConfig, ...(cfg.weekday ?? {}) },
-          weekend: { ...defaultWeekendConfig, ...(cfg.weekend ?? {}) }
-        };
-      }
-    }
-  } catch (e) {
-    console.warn('[TickTots] 服务端作息读取失败，使用本地配置:', e);
+    const saved = localStorage.getItem(CONFIG_KEY);
+    if (!saved) return null;
+    const parsed = JSON.parse(saved);
+    return isValidConfig(parsed) ? parsed : null;
+  } catch {
+    return null;
   }
-  return null;
-}
-
-async function loadSettingsFromServer(): Promise<Settings | null> {
-  try {
-    const res = await fetch('/api/settings');
-    if (res.ok) {
-      const data = await res.json();
-      if (data && Object.keys(data).length > 0) {
-        return { ...defaultSettings, ...data };
-      }
-    }
-  } catch (e) {
-    console.warn('[TickTots] 服务端设置读取失败:', e);
-  }
-  return null;
-}
-
-async function saveSchedulesToServer(): Promise<void> {
-  try {
-    await fetch('/api/state', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        config: { weekday: get(weekdayConfig), weekend: get(weekendConfig) }
-      })
-    });
-  } catch (e) {
-    console.warn('[TickTots] 服务端作息保存失败:', e);
-  }
-}
-
-async function saveSettingsToServer(settings: Settings): Promise<void> {
-  try {
-    await fetch('/api/settings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(settings)
-    });
-  } catch (e) {
-    console.warn('[TickTots] 服务端设置保存失败:', e);
-  }
-}
-
-// ====== 持久化：localStorage ======
-
-function loadScheduleFromStorage(key: string, fallback: TimelineConfig): TimelineConfig {
-  try {
-    const saved = localStorage.getItem(key);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (parsed?.nodes?.length) {
-        return { ...fallback, ...parsed };
-      }
-    }
-  } catch (e) {
-    console.warn('[TickTots] 本地作息读取失败:', e);
-  }
-  return fallback;
 }
 
 function loadSettingsFromStorage(): Settings {
@@ -160,15 +101,17 @@ function loadSettingsFromStorage(): Settings {
 
 // ====== Stores ======
 
-/** 工作日作息（持久化到本地 + 服务端） */
-export const weekdayConfig = writable<TimelineConfig>(
-  loadScheduleFromStorage(WEEKDAY_KEY, defaultWeekdayConfig)
-);
+/** 工作日作息 */
+export const weekdayConfig = writable<TimelineConfig>(defaultWeekdayConfig);
 
-/** 周末作息（持久化到本地 + 服务端） */
-export const weekendConfig = writable<TimelineConfig>(
-  loadScheduleFromStorage(WEEKEND_KEY, defaultWeekendConfig)
-);
+/** 周末作息 */
+export const weekendConfig = writable<TimelineConfig>(defaultWeekendConfig);
+
+/** 孩子昵称（只存本地和 URL，不上传） */
+export const nickname = writable<string>('');
+
+/** 是否启用周末作息（对应 Config.w） */
+export const weekendEnabled = writable<boolean>(false);
 
 /** 当前时间，每秒 tick 一次，驱动所有派生状态（不持久化） */
 export const currentTime = writable<Date>(new Date());
@@ -188,10 +131,10 @@ export const dayType = derived(currentTime, ($now) => {
   return d === 0 || d === 6 ? 'weekend' : 'weekday';
 });
 
-/** 当前显示用的作息（按星期自动切换，只读） */
+/** 当前显示用的作息（周末开关关闭时统一用工作日） */
 export const timelineConfig = derived(
-  [weekdayConfig, weekendConfig, dayType],
-  ([$w, $e, $t]) => ($t === 'weekend' ? $e : $w)
+  [weekdayConfig, weekendConfig, dayType, weekendEnabled],
+  ([$w, $e, $t, $we]) => ($we && $t === 'weekend' ? $e : $w)
 );
 
 /** 家长面板正在编辑的作息类型；面板打开时默认跟随当天 */
@@ -208,114 +151,111 @@ export const activeConfig = derived(
   ([$w, $e, $t]) => ($t === 'weekend' ? $e : $w)
 );
 
-/** 服务端初始化（异步覆盖本地） */
-export async function initializeFromServer(): Promise<void> {
-  const [serverSchedules, serverSettings] = await Promise.all([
-    loadSchedulesFromServer(),
-    loadSettingsFromServer()
-  ]);
-  if (serverSchedules) {
-    if (serverSchedules.weekday?.nodes?.length) weekdayConfig.set(serverSchedules.weekday);
-    if (serverSchedules.weekend?.nodes?.length) weekendConfig.set(serverSchedules.weekend);
-  }
-  if (serverSettings) settings.set(serverSettings);
-}
+// ====== 初始化：URL 优先 → localStorage → 设置页（绝不白屏） ======
 
-// ====== 多设备实时同步（SSE） ======
+export type InitSource = 'url' | 'local' | 'fallback';
+
+export interface InitResult {
+  source: InitSource;
+  /** URL 里带了 c 但解码失败（已降级到本机配置）—— 展示页顶部淡出提示用 */
+  urlCorrupt: boolean;
+}
 
 /**
- * 订阅服务端推送，实现局域网内多设备实时同步。
- * @returns 取消订阅函数
+ * 持久化开关：fallback 路径下不落盘，直到家长点「生成我家的时间轴」
+ * （config_saved 才算「用了」的第一个信号，文档 9.1）。
  */
-export function subscribeToServerUpdates(): () => void {
-  if (typeof window === 'undefined' || typeof EventSource === 'undefined') {
-    return () => {};
-  }
+let persistEnabled = false;
 
-  const es = new EventSource('/api/events');
-
-  es.addEventListener('config', (event) => {
-    try {
-      const remote = JSON.parse((event as MessageEvent).data);
-      if (!remote) return;
-
-      // 静默期内忽略（可能是自己刚保存触发的广播）
-      if (Date.now() - lastLocalEdit < LOCAL_EDIT_GRACE) return;
-
-      if (remote?.weekday?.nodes?.length) {
-        const local = get(weekdayConfig);
-        if (!local?.updatedAt || remote.weekday.updatedAt > local.updatedAt) {
-          weekdayConfig.set(remote.weekday);
-        }
-      }
-      if (remote?.weekend?.nodes?.length) {
-        const local = get(weekendConfig);
-        if (!local?.updatedAt || remote.weekend.updatedAt > local.updatedAt) {
-          weekendConfig.set(remote.weekend);
-        }
-      }
-    } catch {
-      /* 解析失败忽略 */
-    }
-  });
-
-  es.addEventListener('settings', (event) => {
-    try {
-      if (Date.now() - lastLocalEdit < LOCAL_EDIT_GRACE) return;
-      const remote = JSON.parse((event as MessageEvent).data);
-      // 用「远端覆盖当前」而非「远端覆盖默认值」：远端缺失的字段（如旧版未存的 scaleBias）不会被回退成默认值
-      if (remote) settings.update((cur) => ({ ...cur, ...remote }));
-    } catch {
-      /* 解析失败忽略 */
-    }
-  });
-
-  return () => es.close();
+/** 当前 store 状态 → Config */
+export function currentConfig(): Config {
+  return timelineConfigsToConfig(
+    { weekday: get(weekdayConfig), weekend: get(weekendConfig) },
+    get(nickname),
+    get(settings).beepEnabled ? 1 : 0,
+    get(weekendEnabled) ? 1 : 0
+  );
 }
 
-// 防抖保存
-let scheduleSaveTimer: ReturnType<typeof setTimeout> | null = null;
-let settingsSaveTimer: ReturnType<typeof setTimeout> | null = null;
-
-/** 最近一次本地编辑的时间戳，用于避免"自己保存→服务端广播→覆盖自己"的回弹 */
-let lastLocalEdit = 0;
-
-/** 本地编辑静默期（毫秒）：这段时间内忽略远端推送 */
-const LOCAL_EDIT_GRACE = 2000;
-
-function scheduleChanged(): void {
-  if (scheduleSaveTimer) clearTimeout(scheduleSaveTimer);
-  scheduleSaveTimer = setTimeout(() => saveSchedulesToServer(), 1000);
+function persistConfig(): void {
+  if (!persistEnabled) return;
+  try {
+    localStorage.setItem(CONFIG_KEY, JSON.stringify(currentConfig()));
+  } catch (e) {
+    console.warn('[TickTots] 本地作息保存失败:', e);
+  }
 }
 
-// ====== 持久化订阅（本地 + 服务端） ======
+/** 用 Config 整体覆盖 store（URL 命中 / 导入 / 生成后回填都走这里） */
+export function hydrateFromConfig(c: Config | null): boolean {
+  if (!c || !isValidConfig(c)) return false;
+  const pair = configToTimelineConfigs(c);
+  nickname.set(c.n);
+  weekendEnabled.set(c.w === 1);
+  weekdayConfig.set(pair.weekday);
+  weekendConfig.set(pair.weekend);
+  settings.update((s) => ({ ...s, beepEnabled: c.b === 1 }));
+  return true;
+}
 
-weekdayConfig.subscribe((config) => {
-  try {
-    localStorage.setItem(WEEKDAY_KEY, JSON.stringify(config));
-  } catch (e) {
-    console.warn('[TickTots] 本地工作日作息保存失败:', e);
+/**
+ * 启动初始化。返回配置来源，供 App 决定是否提示 / 跳设置页：
+ * - `url`：URL 参数解码成功（URL 优先，同时写入本地）
+ * - `local`：URL 无参或损坏，回落到本机保存的配置
+ * - `fallback`：两处都没有 —— 预填 3 岁模板，**不落盘**，等家长点生成
+ *
+ * `urlCorrupt`：URL 带了 c 但解码失败（文档 7.2 关键约束 1 的降级提示）。
+ */
+export function applyUrlThenLocal(hash?: string): InitResult {
+  const raw = extractParam(hash ?? (typeof location !== 'undefined' ? location.hash : ''));
+  let urlCorrupt = false;
+  if (raw) {
+    const fromUrl = decodeConfig(raw);
+    if (fromUrl && hydrateFromConfig(fromUrl)) {
+      persistEnabled = true;
+      persistConfig();
+      return { source: 'url', urlCorrupt: false };
+    }
+    // URL 损坏：忽略，继续走本地
+    urlCorrupt = true;
   }
-  scheduleChanged();
-});
-
-weekendConfig.subscribe((config) => {
-  try {
-    localStorage.setItem(WEEKEND_KEY, JSON.stringify(config));
-  } catch (e) {
-    console.warn('[TickTots] 本地周末作息保存失败:', e);
+  const local = loadConfigFromStorage();
+  if (local && hydrateFromConfig(local)) {
+    persistEnabled = true;
+    return { source: 'local', urlCorrupt };
   }
-  scheduleChanged();
-});
+  hydrateFromConfig(templateConfig('t3'));
+  persistEnabled = false;
+  return { source: 'fallback', urlCorrupt };
+}
 
+/** 家长点「生成我家的时间轴」后调用：此后每次变更都落盘 */
+export function enablePersist(): void {
+  persistEnabled = true;
+  persistConfig();
+}
+
+/** 导入 JSON 后立即落盘 */
+export function applyImportedConfig(c: Config): boolean {
+  if (!hydrateFromConfig(c)) return false;
+  persistEnabled = true;
+  persistConfig();
+  return true;
+}
+
+// ====== 持久化订阅（只写本地，零网络） ======
+
+weekdayConfig.subscribe(() => persistConfig());
+weekendConfig.subscribe(() => persistConfig());
+nickname.subscribe(() => persistConfig());
+weekendEnabled.subscribe(() => persistConfig());
 settings.subscribe((s) => {
   try {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
   } catch (e) {
     console.warn('[TickTots] 本地设置保存失败:', e);
   }
-  if (settingsSaveTimer) clearTimeout(settingsSaveTimer);
-  settingsSaveTimer = setTimeout(() => saveSettingsToServer(s), 1000);
+  persistConfig();
 });
 
 // ====== 派生状态 ======
@@ -399,8 +339,6 @@ export function setManualTime(min: number | null): void {
 
 /** 更新"当前正在编辑"的那套作息 */
 export function updateConfig(updater: (config: TimelineConfig) => TimelineConfig): void {
-  // 标记本地编辑时间，SSE 静默期内忽略回弹
-  lastLocalEdit = Date.now();
   const store = get(editScheduleType) === 'weekend' ? weekendConfig : weekdayConfig;
   store.update((config) => ({
     ...updater(config),
@@ -537,14 +475,11 @@ export function reorderNodes(from: number, to: number): void {
 
 /** 更新设置 */
 export function updateSettings(newSettings: Partial<Settings>): void {
-  // 标记本地编辑时间，避免「自己保存 → 服务端广播 → 覆盖自己」的回弹（与 updateConfig 一致）
-  lastLocalEdit = Date.now();
   settings.update((s) => ({ ...s, ...newSettings }));
 }
 
 /** 恢复默认作息（两套都恢复） */
 export function resetToDefault(): void {
-  lastLocalEdit = Date.now();
   weekdayConfig.set({ ...defaultWeekdayConfig, updatedAt: Date.now() });
   weekendConfig.set({ ...defaultWeekendConfig, updatedAt: Date.now() });
 }
@@ -581,3 +516,6 @@ export function formatRemaining(seconds: number): string {
 export function getConfigSnapshot(): TimelineConfig {
   return get(activeConfig);
 }
+
+/** get 供外部一次性读取（导出 JSON 等） */
+export { get };
