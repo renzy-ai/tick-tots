@@ -63,6 +63,34 @@ node server/index.js
 npm test
 ```
 
+### 回归测试（Playwright）
+
+改完任何 UI，建议把下面四套一起跑绿再提：
+
+```bash
+npm i -D playwright-core
+node scripts/verify/smoke.mjs          # 24 项：首屏/模板/生成/分享链/坏链降级/隐私
+node scripts/verify/verify-edit.mjs    # 18 项：改时间/拖拽排序/改完没生成也落盘
+node scripts/verify/verify-layout.mjs  # 25 项：桌面时间轴不出屏 + 设置页取消/保存
+node scripts/verify/verify-mobile.mjs  # 12 项：手机横竖屏字级/内容横屏兜底/平板
+```
+
+脚本自动探测本机已装的 Chrome / Chromium，三个平台都覆盖：
+
+| 平台 | 默认探测位置 |
+|------|-------------|
+| macOS | `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome` |
+| Windows | `C:/Program Files/Google/Chrome/Application/chrome.exe` |
+| Linux | `/usr/bin/google-chrome`、`/usr/bin/chromium` 等 |
+
+装了多个版本、或装在非标准位置，用 `CHROME_PATH` 指定：
+
+```bash
+CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" node scripts/verify/smoke.mjs
+```
+
+其他可选变量：`BASE_URL`（默认 `http://localhost:4173`）、`SHOT_DIR`（截图输出目录，默认系统临时目录）。
+
 ### 局域网多设备
 
 1. 电脑/平板启动服务（挂墙设备直接打开 http://localhost:3010/）

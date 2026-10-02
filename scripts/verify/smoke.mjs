@@ -1,7 +1,8 @@
 import { chromium } from 'playwright-core';
+import { resolveChromePath } from './browser.mjs';
 
 const BASE = process.env.BASE_URL || 'http://localhost:4173';
-const CHROME = process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe';
+const CHROME = resolveChromePath();
 const NAMES = ['起床', '早餐', '幼儿园', '午餐', '午睡', '晚餐', '睡觉'];
 const results = [];
 
@@ -9,7 +10,7 @@ function ok(name, cond, detail = '') {
   results.push([cond ? 'PASS' : 'FAIL', name, cond ? '' : detail]);
 }
 
-const browser = await chromium.launch({ executablePath: CHROME, headless: true });
+const browser = await chromium.launch({ executablePath: CHROME || undefined, headless: true });
 
 async function newCtx() {
   const ctx = await browser.newContext();

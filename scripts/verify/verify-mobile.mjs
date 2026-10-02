@@ -1,7 +1,8 @@
 import os from 'node:os';
 import { chromium } from 'playwright-core';
+import { resolveChromePath } from './browser.mjs';
 
-const CHROME = process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe';
+const CHROME = resolveChromePath();
 const OUT = process.env.SHOT_DIR || os.tmpdir();
 const results = [];
 const ok = (name, cond, detail = '') => results.push([cond ? 'PASS' : 'FAIL', name, cond ? '' : detail]);
@@ -22,7 +23,7 @@ async function pickBase(browser) {
   throw new Error('no preview server on 4173-4176');
 }
 
-const browser = await chromium.launch({ executablePath: CHROME, headless: true });
+const browser = await chromium.launch({ executablePath: CHROME || undefined, headless: true });
 const BASE = await pickBase(browser);
 console.log('BASE =', BASE);
 
