@@ -328,12 +328,12 @@
                  stroke-width: {item.node.required ? 3 : 2};
                  stroke-dasharray: {item.node.required ? 'none' : '5 4'}"
         />
-        <!-- 图标永远居中显示（短活动也看得见） -->
+        <!-- 图标永远居中显示（短活动也看得见）；字号走 CSS，小屏媒体查询才能放大 -->
         <text
           x={r.cx}
           y={TRACK_Y}
           class="node-icon"
-          style="font-size: {isCur ? 26 : 18}px"
+          class:current={isCur}
         >{a.icon}</text>
         <!-- 较宽格子内显示开始时间（数字，非中文名） -->
         {#if r.w >= 50}
@@ -469,6 +469,54 @@
   .node-icon {
     text-anchor: middle;
     dominant-baseline: middle;
+    font-size: 18px;
+  }
+
+  .node-icon.current {
+    font-size: 26px;
+  }
+
+  /* 手机 / 矮窗口：SVG 按 viewBox 缩放，字太小看不清——加大内部字号（平板/桌面不受影响） */
+  @media (max-width: 900px), (max-height: 520px) {
+    .ruler-label {
+      font-size: 18px;
+    }
+
+    .node-icon {
+      font-size: 22px;
+    }
+
+    .node-icon.current {
+      font-size: 30px;
+    }
+
+    .node-time {
+      font-size: 15px;
+    }
+
+    .tooltip-name {
+      font-size: 17px;
+    }
+
+    .tooltip-time {
+      font-size: 14px;
+    }
+
+    .sleep-node-icon {
+      font-size: 32px;
+    }
+
+    .sleep-node-label {
+      font-size: 21px;
+    }
+  }
+
+  /* 横屏手机：高度紧张，收紧时间轴高度上限，把空间留给上方大字区 */
+  @media (max-height: 520px) {
+    .timeline {
+      max-height: 44vh;
+      max-height: 44dvh;
+    }
   }
 
   /* 悬浮 / 点按高亮 */

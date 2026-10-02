@@ -118,11 +118,28 @@
     location.hash = '#/';
   }
 
+  /** 进全屏后尝试锁横屏（Android Chrome / 桌面可用；iOS 不支持则静默忽略，靠竖屏提示层引导） */
+  function lockLandscape(): void {
+    try {
+      const so = screen.orientation as unknown as
+        | { lock?: (o: string) => Promise<void>; unlock?: () => void }
+        | undefined;
+      so?.lock?.('landscape')?.catch(() => {});
+    } catch {
+      /* 无 Screen Orientation API：忽略 */
+    }
+  }
+
   function toggleFullscreen() {
     if (document.fullscreenElement) {
       document.exitFullscreen?.().catch(() => {});
+      try {
+        (screen.orientation as unknown as { unlock?: () => void } | undefined)?.unlock?.();
+      } catch {
+        /* 忽略 */
+      }
     } else {
-      document.documentElement.requestFullscreen?.().catch(() => {});
+      document.documentElement.requestFullscreen?.().then(lockLandscape).catch(() => {});
     }
   }
 
@@ -153,7 +170,7 @@
   function handleDoubleTap() {
     const now = Date.now();
     if (now - lastTap < 300) {
-      document.documentElement.requestFullscreen?.().catch(() => {});
+      document.documentElement.requestFullscreen?.().then(lockLandscape).catch(() => {});
     }
     lastTap = now;
   }
@@ -394,6 +411,13 @@
     {#if degradedHint}
       <div class="degraded-hint">链接配置无效，已显示本机保存的配置</div>
     {/if}
+
+    <!-- 手机竖屏：时间轴按横屏宽度设计，竖着拿会挤成看不清的细条——提示横屏（不挡操作） -->
+    <div class="rotate-hint" aria-hidden="true">
+      <div class="rotate-icon">📱</div>
+      <div class="rotate-text">请把手机横过来</div>
+      <div class="rotate-sub">横屏后时间轴更大、看得更清楚</div>
+    </div>
   </main>
 
   <ParentPanel visible={showParentPanel} onClose={() => (showParentPanel = false)} />
@@ -763,6 +787,125 @@
     }
     100% {
       opacity: 0;
+    }
+  }
+
+  /* ---- 横屏适配（manifest 也是 landscape；竖屏时间轴会挤成细条） ---- */
+
+  /* 竖屏手机：提示横屏。透明度只做提醒、不挡点击（pointer-events: none） */
+  .rotate-hint {
+    display: none;
+  }
+
+  @media (orientation: portrait) and (max-width: 640px) {
+    .rotate-hint {
+      position: absolute;
+      inset: 0;
+      z-index: 80;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      background: rgba(11, 16, 32, 0.72);
+      pointer-events: none;
+    }
+
+    .rotate-icon {
+      font-size: 64px;
+      line-height: 1;
+      animation: rotate-phone 2.4s ease-in-out infinite;
+    }
+
+    .rotate-text {
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .rotate-sub {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.7);
+    }
+  }
+
+  @keyframes rotate-phone {
+    0%,
+    18% {
+      transform: rotate(0deg);
+    }
+    50%,
+    68% {
+      transform: rotate(-90deg);
+    }
+    100% {
+      transform: rotate(0deg);
+    }
+  }
+
+  /* 横屏手机 / 矮窗口：高度紧张——压缩顶部与大字区，把空间留给底部时间轴 */
+  @media (max-height: 520px) {
+    .clock-bar {
+      padding: 6px 16px 0;
+      padding-left: 96px;
+    }
+
+    .wall-clock {
+      font-size: 20px;
+    }
+
+    .day-range {
+      font-size: 11px;
+    }
+
+    .now-section {
+      padding: 2px 16px 4px;
+    }
+
+    .activity-icon {
+      font-size: min(12vw, 17vh, 68px);
+    }
+
+    .activity-name {
+      font-size: min(6vw, 8vh, 34px);
+      margin-top: 2px;
+    }
+
+    .time-info {
+      margin-top: 6px;
+      gap: 1px;
+    }
+
+    .remaining.normal {
+      font-size: min(4vw, 5vh, 24px);
+    }
+
+    .remaining.sleep-mode {
+      font-size: min(4.5vw, 5.5vh, 26px);
+    }
+
+    .remaining.soon {
+      font-size: min(6vw, 7.5vh, 36px);
+    }
+
+    .remaining.urgent {
+      font-size: min(8.5vw, 10.5vh, 50px);
+    }
+
+    .end-at,
+    .next-hint {
+      font-size: min(3vw, 3.4vh, 13px);
+    }
+
+    .timeline-section {
+      margin-top: 6px;
+      padding: 0 4px 4px;
+    }
+
+    .view-btn {
+      width: 36px;
+      height: 36px;
+      font-size: 15px;
     }
   }
 
