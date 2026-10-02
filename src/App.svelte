@@ -31,6 +31,7 @@
     manualTime,
     setManualTime,
     applyUrlThenLocal,
+    ensureLocalInit,
     currentConfig
   } from './lib/stores/timer';
   import { checkReminders, unlockAudio } from './lib/beeper';
@@ -95,6 +96,9 @@
     if (next === 'view') {
       enterView();
     } else {
+      // 设置页也要初始化：直开 #/ 时预填 3 岁模板或本机配置，
+      // 否则 store 里是 timeline.ts 的 13 节点旧默认值，「生成」会被校验拦下。
+      ensureLocalInit();
       releaseWakeLock();
     }
   }

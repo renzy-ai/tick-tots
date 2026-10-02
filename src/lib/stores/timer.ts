@@ -13,8 +13,6 @@
 import { writable, derived, get } from 'svelte/store';
 import type { TimelineConfig, TimelineNode } from '../timeline';
 import {
-  defaultWeekdayConfig,
-  defaultWeekendConfig,
   getCurrentNode,
   getNextNode,
   getProgress,
@@ -101,11 +99,18 @@ function loadSettingsFromStorage(): Settings {
 
 // ====== Stores ======
 
+/**
+ * 预填用的初始作息 = 3 岁模板（文档 4.2：首屏必须预填 3 岁模板）。
+ * 不能用 timeline.ts 的 defaultWeekdayConfig——那是旧挂钟模型的 13 节点默认值，
+ * 超过 10 个节点上限，「生成」会被校验拦下（表现为「改了时间没生效」）。
+ */
+const initialPair = configToTimelineConfigs(templateConfig('t3'));
+
 /** 工作日作息 */
-export const weekdayConfig = writable<TimelineConfig>(defaultWeekdayConfig);
+export const weekdayConfig = writable<TimelineConfig>(initialPair.weekday);
 
 /** 周末作息 */
-export const weekendConfig = writable<TimelineConfig>(defaultWeekendConfig);
+export const weekendConfig = writable<TimelineConfig>(initialPair.weekend);
 
 /** 孩子昵称（只存本地和 URL，不上传） */
 export const nickname = writable<string>('');
@@ -140,15 +145,15 @@ export const timelineConfig = derived(
 /** 家长面板正在编辑的作息类型；面板打开时默认跟随当天 */
 export const editScheduleType = writable<ScheduleType>('weekday');
 
-/** 打开面板时，把编辑目标设为"今天"对应的那一套 */
+/** 打开面板时，把编辑目标设为"今天"对应的那一套（未开两套时固定工作日） */
 export function initEditScheduleType(): void {
-  editScheduleType.set(get(dayType));
+  editScheduleType.set(get(weekendEnabled) ? get(dayType) : 'weekday');
 }
 
-/** 当前正在编辑的作息（读/写都走它） */
+/** 当前正在编辑的作息（读/写都走它）。未开两套时永远是工作日，避免改了不生效 */
 export const activeConfig = derived(
-  [weekdayConfig, weekendConfig, editScheduleType],
-  ([$w, $e, $t]) => ($t === 'weekend' ? $e : $w)
+  [weekdayConfig, weekendConfig, editScheduleType, weekendEnabled],
+  ([$w, $e, $t, $we]) => ($we && $t === 'weekend' ? $e : $w)
 );
 
 // ====== 初始化：URL 优先 → localStorage → 设置页（绝不白屏） ======
@@ -207,6 +212,7 @@ export function hydrateFromConfig(c: Config | null): boolean {
  * `urlCorrupt`：URL 带了 c 但解码失败（文档 7.2 关键约束 1 的降级提示）。
  */
 export function applyUrlThenLocal(hash?: string): InitResult {
+  bootstrapped = true;
   const raw = extractParam(hash ?? (typeof location !== 'undefined' ? location.hash : ''));
   let urlCorrupt = false;
   if (raw) {
@@ -224,9 +230,32 @@ export function applyUrlThenLocal(hash?: string): InitResult {
     persistEnabled = true;
     return { source: 'local', urlCorrupt };
   }
-  hydrateFromConfig(templateConfig('t3'));
+  // 先关落盘再回填模板，避免 subscribe 误把兜底模板写进 localStorage
   persistEnabled = false;
+  hydrateFromConfig(templateConfig('t3'));
   return { source: 'fallback', urlCorrupt };
+}
+
+/**
+ * 设置页（`#/`）启动初始化：只跑一次。
+ * - localStorage 有配置 → 读它（上次生成/编辑的结果）
+ * - 没有 → 预填 3 岁模板（文档 4.2「首屏必须预填 3 岁模板」），不落盘
+ *
+ * 展示页走 `applyUrlThenLocal()`（URL 优先），两者互不抢跑：
+ * 任一路径初始化过后，另一条就不再覆盖 store。
+ */
+let bootstrapped = false;
+
+export function ensureLocalInit(): void {
+  if (bootstrapped) return;
+  bootstrapped = true;
+  const local = loadConfigFromStorage();
+  if (local && hydrateFromConfig(local)) {
+    persistEnabled = true;
+    return;
+  }
+  persistEnabled = false;
+  hydrateFromConfig(templateConfig('t3'));
 }
 
 /** 家长点「生成我家的时间轴」后调用：此后每次变更都落盘 */
@@ -339,6 +368,10 @@ export function setManualTime(min: number | null): void {
 
 /** 更新"当前正在编辑"的那套作息 */
 export function updateConfig(updater: (config: TimelineConfig) => TimelineConfig): void {
+  // 家长真的动手改了（改时间/拖拽/增删）就算「用过」——立即落盘，
+  // 避免改完没点生成就刷新/后退，改动全部蒸发。
+  // 兜底模板仍然不落盘（只有 hydrate 走它，不经这里）。
+  persistEnabled = true;
   const store = get(editScheduleType) === 'weekend' ? weekendConfig : weekdayConfig;
   store.update((config) => ({
     ...updater(config),
@@ -445,8 +478,12 @@ export function nudgeNode(id: string, deltaMinutes: number): void {
 }
 
 /**
- * 拖拽排序：交换 from 与 to 两个节点的位置，并对调它们的开始时间。
- * 各自保留时长，不触碰其他节点，因此不会丢失节点之间的空闲间隔。
+ * 拖拽排序：把「哪个活动占用哪个时段」换位——
+ * 图标 / 名称 / 必须一起换到目标行，**时间留在原来的行上**。
+ *
+ * 不能只对调时间（旧行为）：那会让图标和名称钉在原位、时间却跳到别的行，
+ * 视觉上就是「名称没动、时间被拖走了」。id 也不动（行 DOM 不重排，
+ * 拖拽的 pointer capture 才不会中途丢失）。
  */
 export function reorderNodes(from: number, to: number): void {
   updateConfig((config) => {
@@ -457,17 +494,9 @@ export function reorderNodes(from: number, to: number): void {
     const a = nodes[from];
     const b = nodes[to];
 
-    // 对调两个节点的开始时间，各自保留时长
-    nodes[from] = {
-      ...a,
-      startTime: b.startTime,
-      endTime: minutesToTime(timeToMinutes(b.startTime) + durationOf(a))
-    };
-    nodes[to] = {
-      ...b,
-      startTime: a.startTime,
-      endTime: minutesToTime(timeToMinutes(a.startTime) + durationOf(b))
-    };
+    // 换活动内容，时段（id + 起止）留在原地
+    nodes[from] = { ...a, activity: b.activity, name: b.name, required: b.required };
+    nodes[to] = { ...b, activity: a.activity, name: a.name, required: a.required };
 
     return { ...config, nodes };
   });
@@ -478,10 +507,11 @@ export function updateSettings(newSettings: Partial<Settings>): void {
   settings.update((s) => ({ ...s, ...newSettings }));
 }
 
-/** 恢复默认作息（两套都恢复） */
+/** 恢复默认作息（两套都恢复为 3 岁模板；旧 13 节点默认值会撞 10 个上限） */
 export function resetToDefault(): void {
-  weekdayConfig.set({ ...defaultWeekdayConfig, updatedAt: Date.now() });
-  weekendConfig.set({ ...defaultWeekendConfig, updatedAt: Date.now() });
+  const pair = configToTimelineConfigs(templateConfig('t3', get(nickname)));
+  weekdayConfig.set({ ...pair.weekday, updatedAt: Date.now() });
+  weekendConfig.set({ ...pair.weekend, updatedAt: Date.now() });
 }
 
 // ====== 辅助 ======
