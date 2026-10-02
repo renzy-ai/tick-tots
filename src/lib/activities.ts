@@ -193,7 +193,47 @@ export const activities: Record<string, Activity> = {
     color: '#AFA9EC',
     colorLight: '#CECBF6',
     gradient: 'linear-gradient(135deg, #AFA9EC 0%, #7F77DD 100%)'
-  }
+  },
+  meal: {
+    id: 'meal',
+    name: '吃饭',
+    icon: '🍚',
+    color: '#F0997B',
+    colorLight: '#F5C4B3',
+    gradient: 'linear-gradient(135deg, #F0997B 0%, #D85A30 100%)'
+  },
+  study: {
+    id: 'study',
+    name: '学习',
+    icon: '🎒',
+    color: '#AFA9EC',
+    colorLight: '#CECBF6',
+    gradient: 'linear-gradient(135deg, #AFA9EC 0%, #7F77DD 100%)'
+  },
+  outdoor: {
+    id: 'outdoor',
+    name: '户外',
+    icon: '⚽',
+    color: '#FAC775',
+    colorLight: '#FAEEDA',
+    gradient: 'linear-gradient(135deg, #FAC775 0%, #BA7517 100%)'
+  },
+  screen: {
+    id: 'screen',
+    name: '看屏幕',
+    icon: '📺',
+    color: '#97C459',
+    colorLight: '#C0DD97',
+    gradient: 'linear-gradient(135deg, #97C459 0%, #639922 100%)'
+  },
+  other: {
+    id: 'other',
+    name: '其他',
+    icon: '⭐',
+    color: '#97C459',
+    colorLight: '#C0DD97',
+    gradient: 'linear-gradient(135deg, #97C459 0%, #639922 100%)'
+  },
 };
 
 // Get activity by ID with fallback

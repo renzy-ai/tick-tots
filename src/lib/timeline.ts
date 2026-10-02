@@ -13,6 +13,8 @@ export interface TimelineNode {
   startTime: string; // "HH:MM" 格式
   endTime: string;   // "HH:MM" 格式
   required: boolean;  // true=必须做（实线框）, false=自由（虚线框）
+  /** 显示名（网页版 MVP：RoutineNode.n），缺省时用 activity 的默认名 */
+  name?: string;
 }
 
 export interface TimelineConfig {
