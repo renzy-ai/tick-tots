@@ -183,6 +183,8 @@
         index: i,
         onArc: e < s,
         activity: getActivity(node.activity),
+        // 显示名优先用节点自定义名（如「早餐」），缺省回退活动默认名
+        displayName: node.name || getActivity(node.activity).name,
         state: 'future' as 'past' | 'current' | 'future',
         rect: undefined as { x: number; w: number; cx: number } | undefined
       };
@@ -304,7 +306,7 @@
         class:hovered={isTip}
         role="button"
         tabindex="0"
-        aria-label={`${a.name} ${item.node.startTime} 到 ${item.node.endTime}`}
+        aria-label={`${item.displayName} ${item.node.startTime} 到 ${item.node.endTime}`}
         onmouseenter={() => (hoverIdx = i)}
         onmouseleave={() => (hoverIdx = null)}
         onclick={() => (tapIdx = tapIdx === i ? null : i)}
@@ -351,7 +353,7 @@
       {@const tx = Math.min(Math.max(r.cx, tw / 2 + 4), VB_W - tw / 2 - 4)}
       <g class="tooltip">
         <rect x={tx - tw / 2} y={2} width={tw} height={38} rx="10" class="tooltip-bg" />
-        <text x={tx} y={19} class="tooltip-name" text-anchor="middle">{a.name}</text>
+        <text x={tx} y={19} class="tooltip-name" text-anchor="middle">{tip.displayName}</text>
         <text x={tx} y={34} class="tooltip-time" text-anchor="middle">{tip.node.startTime}–{tip.node.endTime}</text>
       </g>
     {/if}
@@ -365,7 +367,7 @@
         <circle cx={sleepNodePos.x} cy={sleepNodePos.y} r="28" class="sleep-node-bg" />
         <text x={sleepNodePos.x} y={sleepNodePos.y + 3} class="sleep-node-icon">{a.icon}</text>
         <text x={sleepNodePos.x + 40} y={sleepNodePos.y + 7} class="sleep-node-label">
-          {a.name} {item.node.startTime}→{item.node.endTime}
+          {item.displayName} {item.node.startTime}→{item.node.endTime}
         </text>
       </g>
     {/if}
