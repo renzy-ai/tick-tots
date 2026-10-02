@@ -59,6 +59,7 @@ node scripts/verify/verify-mobile.mjs  # 12 项：手机横竖屏字级/内容�
 
 ## 5. 你的任务（按优先级）
 
+0. **把项目提交到 GitHub**（需求方明确要求）：本地 `dev` 分支已就绪，但推送目前被 403 挡住——**先看第 9 节**，拿到写权限后 `git push -u origin dev` 即可。
 1. **接真机验证反馈并修复**：需求方会拿真机（iOS Safari / Android Chrome / 微信内置浏览器 / 平板横屏）过一遍，问题以中文反馈回来。流程：先复现 → 修 → 跑第 3 节全部回归 → 提交。真机验证清单见 MVP 规格第 11 节（本地可测项）与第 14 节（风险）。
 2. **部署**：与需求方确认平台再动（方案里提过 WorkBuddy 发布或 EdgeOne）。产物就是 `dist/`，纯静态。**部署动作与凭证归需求方**；你能做的是把产物整理好、把步骤写清楚。
 3. **README 体验链接回填**：部署后把体验链接写进 README 顶部「网页版」段。
@@ -103,3 +104,26 @@ Co-Authored-By: Claude Code <noreply@anthropic.com>
 | `src/App.svelte` | hash 路由 + 展示页（齿轮/全屏/分享/横竖屏兜底） |
 | `server/` | **只保留、不合删**（main 分支的 Node 同步服务） |
 | `scripts/verify/` | 四套回归脚本（见第 3 节） |
+
+## 9. GitHub / 推送现状（要提交 GitHub 先看这节）
+
+- 远程：`https://github.com/renzy-ai/tick-tots.git`。远程上**只有 `main`**；`web-mvp`、`dev` 都还没推上去过。
+- 本机 Git 凭证（Windows 凭证管理器）属于 GitHub 账号 `yiyi123456789`，对 `renzy-ai/tick-tots` **只有读权限**：
+
+  ```
+  remote: Permission to renzy-ai/tick-tots.git denied to yiyi123456789.
+  fatal: ... error: 403
+  ```
+
+- 要推的分支是 **`dev`**（= `web-mvp` + 本文 + `scripts/verify/`）：
+
+  ```bash
+  git push -u origin dev
+  ```
+
+- 推之前需要需求方给下面之一（**别自己新建仓库**，见第 6 节红线）：
+  1. 把 `yiyi123456789` 加为 `renzy-ai/tick-tots` 的可写协作者（或换成有写权限的账号登录凭证），然后直接推；
+  2. 一个有 repo 写权限的 token / 账号；
+  3. 明确指定另一个可写的远程仓库地址（`git remote set-url origin <url>`）；
+  4. 或需求方自己推——你把上面的命令和分支名给他就行。
+- 环境备注：`gh` CLI 未安装；没有 `GITHUB_TOKEN` / `GH_TOKEN` 环境变量；`git ls-remote` 能通（读没问题）。
