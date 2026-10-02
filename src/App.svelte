@@ -118,7 +118,45 @@
     location.hash = '#/';
   }
 
-  /** 进全屏后尝试锁横屏（Android Chrome / 桌面可用；iOS 不支持则静默忽略，靠竖屏提示层引导） */
+  // ====== 横屏：系统自动旋转锁死 / 微信 webview 不给转时，直接把内容转 90° ======
+
+  /** 真实视口尺寸（内容横屏后 CSS 不会改它，所以布局尺寸要在 JS 里算） */
+  let vpW = $state(0);
+  let vpH = $state(0);
+  /** 内容横屏：整个展示页转 90°，不依赖系统自动旋转（微信 / iOS / 旋转锁死都能用） */
+  let contentRotated = $state(false);
+  /** 真实视口是否竖屏（控制「直接横屏」按钮与提示条） */
+  let screenPortrait = $state(false);
+  /** 竖屏提示条（一次性淡出，不再糊满屏） */
+  let rotateHint = $state(false);
+
+  /** 布局宽高（内容横屏时对调）——字体/时间轴尺寸都按它算，避免 vh/vw 在旋转后算错 */
+  let layoutW = $derived(contentRotated ? vpH : vpW);
+  let layoutH = $derived(contentRotated ? vpW : vpH);
+  /** 时间轴字号档位：sm=手机竖屏（宽≤640）；md=手机横屏/矮窗口；lg=桌面平板 */
+  let tlSize = $derived<'lg' | 'md' | 'sm'>(layoutW <= 640 ? 'sm' : layoutW <= 900 || layoutH <= 520 ? 'md' : 'lg');
+  /** 布局高度紧张：压扁上方大字区，把空间留给时间轴 */
+  let compact = $derived(layoutH <= 520);
+  /** 时间轴高度上限按布局高度给（px），不用 vh——内容横屏时 vh 指的是真实视口，会算错 */
+  let tlMaxH = $derived(`${Math.round(layoutH * 0.56)}px`);
+
+  function syncViewport(): void {
+    vpW = window.innerWidth;
+    vpH = window.innerHeight;
+    screenPortrait = vpH > vpW;
+    // 用户真的把手机转过来了（系统自动旋转生效）→ 撤掉内容横屏，避免转两次
+    if (!screenPortrait && contentRotated) contentRotated = false;
+    rotateHint = screenPortrait && vpW <= 640 && !contentRotated;
+  }
+
+  /** 直接把内容转成横屏 / 还原（不依赖全屏与方向锁，微信里也管用） */
+  function setContentRotated(on: boolean): void {
+    contentRotated = on;
+    syncViewport();
+    flashControls();
+  }
+
+  /** 进全屏后尝试锁横屏（Android Chrome / 桌面可用；iOS 不支持则静默忽略） */
   function lockLandscape(): void {
     try {
       const so = screen.orientation as unknown as
@@ -130,17 +168,42 @@
     }
   }
 
-  function toggleFullscreen() {
-    if (document.fullscreenElement) {
-      document.exitFullscreen?.().catch(() => {});
-      try {
-        (screen.orientation as unknown as { unlock?: () => void } | undefined)?.unlock?.();
-      } catch {
-        /* 忽略 */
-      }
+  /** 全屏时自动转横屏：能锁方向就锁；锁不了（iOS/微信/自动旋转被锁）就转内容 */
+  function enterImmersive(): void {
+    const finish = () => {
+      lockLandscape();
+      window.setTimeout(() => {
+        syncViewport();
+        if (window.innerHeight > window.innerWidth) {
+          contentRotated = true;
+          syncViewport();
+        }
+      }, 350);
+    };
+    const el = document.documentElement;
+    if (el.requestFullscreen) {
+      el.requestFullscreen().then(finish).catch(finish);
     } else {
-      document.documentElement.requestFullscreen?.().then(lockLandscape).catch(() => {});
+      finish(); // 微信等不支持全屏 API：照样转内容
     }
+  }
+
+  function toggleFullscreen() {
+    if (document.fullscreenElement || contentRotated) {
+      if (document.fullscreenElement) {
+        document.exitFullscreen?.().catch(() => {});
+        try {
+          (screen.orientation as unknown as { unlock?: () => void } | undefined)?.unlock?.();
+        } catch {
+          /* 忽略 */
+        }
+      }
+      contentRotated = false;
+      syncViewport();
+    } else {
+      enterImmersive();
+    }
+    flashControls();
   }
 
   // ====== 家长面板：长按左上角 2 秒（仅家长设备；带 URL 参数时禁用防误触） ======
@@ -170,7 +233,7 @@
   function handleDoubleTap() {
     const now = Date.now();
     if (now - lastTap < 300) {
-      document.documentElement.requestFullscreen?.().then(lockLandscape).catch(() => {});
+      enterImmersive();
     }
     lastTap = now;
   }
@@ -260,6 +323,11 @@
 
     initEditScheduleType();
 
+    // 视口跟踪：尺寸/方向变化时重算布局档位（内容横屏的转/还原也走它）
+    syncViewport();
+    window.addEventListener('resize', syncViewport);
+    window.addEventListener('orientationchange', syncViewport);
+
     // 初始路由 + 降级初始化（URL → 本地 → 设置页）
     window.addEventListener('hashchange', onHashChange);
     onHashChange();
@@ -272,6 +340,8 @@
       document.removeEventListener('contextmenu', preventContext);
       document.removeEventListener('visibilitychange', handleVisibility);
       window.removeEventListener('hashchange', onHashChange);
+      window.removeEventListener('resize', syncViewport);
+      window.removeEventListener('orientationchange', syncViewport);
       releaseWakeLock();
     };
   });
@@ -283,9 +353,12 @@
   <main
     class="app"
     class:night={isSleep}
+    class:compact
+    class:rotated={contentRotated}
     style="background: {isSleep
       ? 'linear-gradient(160deg, var(--night-bg-from) 0%, var(--night-bg-to) 100%)'
-      : activity?.gradient || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'}"
+      : activity?.gradient || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'};
+      --vw: {layoutW}px; --vh: {layoutH}px; --tl-max-h: {tlMaxH}"
     ontouchend={handleDoubleTap}
     ontouchmove={flashControls}
     onmousemove={flashControls}
@@ -363,7 +436,7 @@
 
     <!-- 时间轴 -->
     <div class="timeline-section">
-      <Timeline {config} currentNode={node} currentTime={$currentTime} scaleBias={$settings.scaleBias ?? 0.85} />
+      <Timeline {config} currentNode={node} currentTime={$currentTime} scaleBias={$settings.scaleBias ?? 0.85} size={tlSize} />
     </div>
 
     <!-- 家长触发区（左上角长按 2 秒 → 快捷微调面板）
@@ -398,6 +471,14 @@
       {#if shareFromSession}
         <button class="view-btn" onclick={() => (shareOpen = true)} aria-label="分享给家人" title="分享给家人">🔗</button>
       {/if}
+      {#if contentRotated || (screenPortrait && vpW <= 900)}
+        <button
+          class="view-btn"
+          onclick={() => setContentRotated(!contentRotated)}
+          aria-label={contentRotated ? '还原竖屏' : '直接横屏显示'}
+          title={contentRotated ? '还原竖屏' : '直接横屏显示（不用转手机）'}
+        >{contentRotated ? '↩' : '🔄'}</button>
+      {/if}
       <button class="view-btn" onclick={toggleFullscreen} aria-label="全屏" title="全屏">⛶</button>
       <button class="view-btn gear-btn" onclick={goSetup} aria-label="返回设置" title="返回设置">⚙️</button>
     </div>
@@ -412,12 +493,10 @@
       <div class="degraded-hint">链接配置无效，已显示本机保存的配置</div>
     {/if}
 
-    <!-- 手机竖屏：时间轴按横屏宽度设计，竖着拿会挤成看不清的细条——提示横屏（不挡操作） -->
-    <div class="rotate-hint" aria-hidden="true">
-      <div class="rotate-icon">📱</div>
-      <div class="rotate-text">请把手机横过来</div>
-      <div class="rotate-sub">横屏后时间轴更大、看得更清楚</div>
-    </div>
+    <!-- 手机竖屏：一次性提示条（几秒淡出，不糊满屏、不挡操作） -->
+    {#if rotateHint}
+      <div class="rotate-pill">横屏看得更清楚 · 转不动？开「自动旋转」或点 🔄 直接横屏</div>
+    {/if}
   </main>
 
   <ParentPanel visible={showParentPanel} onClose={() => (showParentPanel = false)} />
@@ -588,7 +667,8 @@
 
   .activity-icon {
     position: relative; /* 作为月亮光晕的定位上下文 */
-    font-size: min(22vw, 130px);
+    /* 尺寸按 --vw（布局宽）算：内容横屏时 vw 会算错 */
+    font-size: min(calc(var(--vw) * 0.22), 130px);
     line-height: 1;
     filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.22));
     animation: gentle-float 3s ease-in-out infinite;
@@ -625,7 +705,7 @@
   }
 
   .activity-name {
-    font-size: min(11vw, 62px);
+    font-size: min(calc(var(--vw) * 0.11), 62px);
     font-weight: 800;
     color: white;
     margin-top: 10px;
@@ -645,24 +725,24 @@
 
   /* 自适应精度：最后 10 分钟转为红橙大字 */
   .remaining.sleep-mode {
-    font-size: min(7vw, 38px);
+    font-size: min(calc(var(--vw) * 0.07), 38px);
     color: #cfe3ff;
     opacity: 0.95;
   }
 
   .remaining.normal {
-    font-size: min(6vw, 34px);
+    font-size: min(calc(var(--vw) * 0.06), 34px);
     opacity: 0.95;
   }
 
   .remaining.soon {
-    font-size: min(9vw, 54px);
+    font-size: min(calc(var(--vw) * 0.09), 54px);
     color: #fff1e6;
     text-shadow: 0 0 22px rgba(255, 107, 53, 0.65);
   }
 
   .remaining.urgent {
-    font-size: min(13vw, 82px);
+    font-size: min(calc(var(--vw) * 0.13), 82px);
     color: var(--c-urgent);
     text-shadow: 0 0 30px rgba(255, 90, 43, 0.85);
     animation: urgent-pulse 1s ease-in-out infinite;
@@ -681,7 +761,7 @@
   .end-at,
   .next-hint {
     margin-top: 0;
-    font-size: min(3.4vw, 16px);
+    font-size: min(calc(var(--vw) * 0.034), 16px);
     color: rgba(255, 255, 255, 0.68);
     font-variant-numeric: tabular-nums;
   }
@@ -790,123 +870,99 @@
     }
   }
 
-  /* ---- 横屏适配（manifest 也是 landscape；竖屏时间轴会挤成细条） ---- */
-
-  /* 竖屏手机：提示横屏。透明度只做提醒、不挡点击（pointer-events: none） */
-  .rotate-hint {
-    display: none;
+  /* 竖屏提示条：几秒淡出，不糊满屏。放在挂钟块下方，不遮「现在 xx:xx」 */
+  .rotate-pill {
+    position: absolute;
+    left: 50%;
+    top: 72px;
+    transform: translateX(-50%);
+    z-index: 80;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.6);
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 12px;
+    max-width: calc(100vw - 24px);
+    white-space: normal;
+    text-align: center;
+    animation: fade-in-out 8s ease forwards;
+    pointer-events: none;
   }
 
-  @media (orientation: portrait) and (max-width: 640px) {
-    .rotate-hint {
-      position: absolute;
-      inset: 0;
-      z-index: 80;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      gap: 10px;
-      background: rgba(11, 16, 32, 0.72);
-      pointer-events: none;
-    }
-
-    .rotate-icon {
-      font-size: 64px;
-      line-height: 1;
-      animation: rotate-phone 2.4s ease-in-out infinite;
-    }
-
-    .rotate-text {
-      font-size: 22px;
-      font-weight: 800;
-      color: #fff;
-    }
-
-    .rotate-sub {
-      font-size: 13px;
-      color: rgba(255, 255, 255, 0.7);
-    }
+  /* 内容横屏：整个展示页转 90°（微信 / iOS / 自动旋转被锁时的兜底） */
+  .app.rotated {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vh;
+    height: 100vw;
+    transform: rotate(90deg) translateY(-100%);
+    transform-origin: top left;
+    z-index: 100;
   }
 
-  @keyframes rotate-phone {
-    0%,
-    18% {
-      transform: rotate(0deg);
-    }
-    50%,
-    68% {
-      transform: rotate(-90deg);
-    }
-    100% {
-      transform: rotate(0deg);
-    }
+  /* 布局高度紧张（真矮窗口 / 内容横屏）：压扁顶部与大字区，空间留给时间轴 */
+  .app.compact .clock-bar {
+    padding: 6px 16px 0;
+    padding-left: 96px;
   }
 
-  /* 横屏手机 / 矮窗口：高度紧张——压缩顶部与大字区，把空间留给底部时间轴 */
-  @media (max-height: 520px) {
-    .clock-bar {
-      padding: 6px 16px 0;
-      padding-left: 96px;
-    }
+  .app.compact .wall-clock {
+    font-size: 20px;
+  }
 
-    .wall-clock {
-      font-size: 20px;
-    }
+  .app.compact .day-range {
+    font-size: 11px;
+  }
 
-    .day-range {
-      font-size: 11px;
-    }
+  .app.compact .now-section {
+    padding: 2px 16px 2px;
+  }
 
-    .now-section {
-      padding: 2px 16px 4px;
-    }
+  .app.compact .activity-icon {
+    font-size: min(calc(var(--vw) * 0.1), calc(var(--vh) * 0.13), 48px);
+  }
 
-    .activity-icon {
-      font-size: min(12vw, 17vh, 68px);
-    }
+  .app.compact .activity-name {
+    font-size: min(calc(var(--vw) * 0.05), calc(var(--vh) * 0.068), 26px);
+    margin-top: 2px;
+  }
 
-    .activity-name {
-      font-size: min(6vw, 8vh, 34px);
-      margin-top: 2px;
-    }
+  .app.compact .time-info {
+    margin-top: 4px;
+    gap: 1px;
+  }
 
-    .time-info {
-      margin-top: 6px;
-      gap: 1px;
-    }
+  .app.compact .remaining.normal {
+    font-size: min(calc(var(--vw) * 0.038), calc(var(--vh) * 0.05), 22px);
+  }
 
-    .remaining.normal {
-      font-size: min(4vw, 5vh, 24px);
-    }
+  .app.compact .remaining.sleep-mode {
+    font-size: min(calc(var(--vw) * 0.042), calc(var(--vh) * 0.055), 24px);
+  }
 
-    .remaining.sleep-mode {
-      font-size: min(4.5vw, 5.5vh, 26px);
-    }
+  .app.compact .remaining.soon {
+    font-size: min(calc(var(--vw) * 0.055), calc(var(--vh) * 0.072), 34px);
+  }
 
-    .remaining.soon {
-      font-size: min(6vw, 7.5vh, 36px);
-    }
+  .app.compact .remaining.urgent {
+    font-size: min(calc(var(--vw) * 0.08), calc(var(--vh) * 0.1), 46px);
+  }
 
-    .remaining.urgent {
-      font-size: min(8.5vw, 10.5vh, 50px);
-    }
+  .app.compact .end-at,
+  .app.compact .next-hint {
+    font-size: min(calc(var(--vw) * 0.028), 13px);
+  }
 
-    .end-at,
-    .next-hint {
-      font-size: min(3vw, 3.4vh, 13px);
-    }
+  .app.compact .timeline-section {
+    margin-top: 4px;
+    padding: 0 2px 2px;
+  }
 
-    .timeline-section {
-      margin-top: 6px;
-      padding: 0 4px 4px;
-    }
-
-    .view-btn {
-      width: 36px;
-      height: 36px;
-      font-size: 15px;
-    }
+  .app.compact .view-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 15px;
   }
 
   /* ---- 夜间态（睡觉时段，主屏切深色夜空）---- */
