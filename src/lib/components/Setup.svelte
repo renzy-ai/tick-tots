@@ -41,6 +41,7 @@
   import { isValidConfig } from '../validate';
   import { trackConfigSaved, getMeta } from '../meta';
   import ShareModal from './ShareModal.svelte';
+  import AuthorModal from './AuthorModal.svelte';
   import type { Config } from '../types';
 
   const MAX_NODES = 10;
@@ -49,6 +50,7 @@
   let selectedActivity = $state('play');
   let shareOpen = $state(false);
   let shareConfig = $state<Config | null>(null);
+  let authorOpen = $state(false);
   let nodeLimitMsg = $state('');
 
   // ====== 进门快照（供「取消」回滚） ======
@@ -277,7 +279,7 @@
       oninput={(e) => nickname.set((e.target as HTMLInputElement).value)}
       aria-label="孩子昵称"
     />
-    <p class="hint">只存本地和链接里，不上传、不收集（见页底隐私声明）</p>
+    <p class="hint">只存本地和链接里（见页底隐私声明）</p>
   </section>
 
   <!-- 三套模板 -->
@@ -441,9 +443,16 @@
     <p class="hint">iPhone 用 Safari 打开 → 分享 → 添加到主屏幕；安卓 / 微信里打开后也可添加。加了以后全屏打开、断网也能用。</p>
   </section>
 
+  <!-- 告诉作者我在用 -->
+  <section class="group">
+    <h3>用上了？跟作者说一声</h3>
+    <p class="hint">点一下复制一行字，扫旁边的公众号二维码关注，在公众号里粘贴发给我就行。你发来的每一条，都是我在验证「有没有家长真的会用」。</p>
+    <button class="btn primary author-btn" onclick={() => (authorOpen = true)}>复制并查看公众号二维码</button>
+  </section>
+
   <!-- 隐私声明（文档 9.4 原文照抄） -->
   <footer class="privacy">
-    <p>所有数据只存在你自己的设备上，我们不收集任何信息。</p>
+    <p>默认不上传任何信息。只有你点「用上了？跟作者说一声」，才会把你设备上这几个数复制给你。</p>
     {#if import.meta.env.DEV}
       <pre class="dev-meta">DEV 埋点自检：{JSON.stringify(meta)}</pre>
     {/if}
@@ -463,6 +472,8 @@
 {#if shareConfig}
   <ShareModal visible={shareOpen} config={shareConfig} onClose={() => (shareOpen = false)} />
 {/if}
+
+<AuthorModal visible={authorOpen} onClose={() => (authorOpen = false)} />
 
 <style>
   .setup {
@@ -821,6 +832,11 @@
   .btn.ghost {
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .author-btn {
+    width: 100%;
+    margin-top: 10px;
   }
 
   /* 底部操作条：固定视口底部，长表单翻到哪都能取消 / 保存 */

@@ -92,3 +92,20 @@ export function trackDisplayOpened(): void {
   m.last = now;
   write(m);
 }
+
+/**
+ * 生成「告诉作者我在用」的回传文本。
+ * 复用已有的 ticktots.meta，不新增字段、不发任何网络请求。
+ * 家长复制后自行粘贴到公众号会话发给作者。
+ */
+export function buildReportText(): string {
+  const m = getMeta();
+  const lines = [
+    '嘀嗒童行 · 我家在用',
+    `首次 ${m.first}`,
+    `已保存配置 ${m.saved ? '✓' : '✗'}`,
+    `打开 ${m.opens} 次`,
+    `第二天回来过 ${m.returned ? '✓' : '✗'}`
+  ];
+  return lines.join(' ｜ ');
+}

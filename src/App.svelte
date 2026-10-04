@@ -13,6 +13,7 @@
   import ParentPanel from './lib/components/ParentPanel.svelte';
   import Setup from './lib/components/Setup.svelte';
   import ShareModal from './lib/components/ShareModal.svelte';
+  import AuthorModal from './lib/components/AuthorModal.svelte';
   import NightSky from './lib/components/NightSky.svelte';
   import { getActivity } from './lib/activities';
   import { nodeDuration } from './lib/timeline';
@@ -73,6 +74,7 @@
   /** 分享按钮：仅从设置页「生成」跳转过来时显示（防孩子乱点） */
   let shareFromSession = $state(false);
   let shareOpen = $state(false);
+  let authorOpen = $state(false);
 
   function enterView() {
     const init = applyUrlThenLocal();
@@ -485,7 +487,7 @@
 
     <!-- 首次打开：底部隐私声明淡出提示（只提示一次） -->
     {#if privacyHint}
-      <div class="privacy-hint">所有数据只存在你自己的设备上，我们不收集任何信息。</div>
+      <div class="privacy-hint">默认不上传任何信息。只有你点「用上了？跟作者说一声」，才会把你设备上这几个数复制给你。</div>
     {/if}
 
     <!-- URL 损坏降级提示 -->
@@ -495,8 +497,13 @@
 
     <!-- 手机竖屏：一次性提示条（几秒淡出，不糊满屏、不挡操作） -->
     {#if rotateHint}
-      <div class="rotate-pill">横屏看得更清楚 · 转不动？开「自动旋转」或点 🔄 直接横屏</div>
+      <div class="rotate-pill">横屏看得更清楚 · 转不动？开「自动旋转」或点  直接横屏</div>
     {/if}
+
+    <!-- 展示页底部：用上了？跟作者说一声 -->
+    <div class="author-cta">
+      <button class="author-cta-btn" onclick={() => (authorOpen = true)}>用上了？跟作者说一声</button>
+    </div>
   </main>
 
   <ParentPanel visible={showParentPanel} onClose={() => (showParentPanel = false)} />
@@ -505,6 +512,7 @@
     config={currentConfig()}
     onClose={() => (shareOpen = false)}
   />
+  <AuthorModal visible={authorOpen} onClose={() => (authorOpen = false)} />
 {/if}
 
 <style>
@@ -979,6 +987,34 @@
   /* 辅助文字改走夜间 token：纯白在 #1a1a2e 上刺眼，睡前看屏幕会越看越精神 */
   .app.night .wall-clock {
     color: var(--night-text);
+  }
+
+  /* ---- 展示页底部「跟作者说一声」按钮 ---- */
+  .author-cta {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+    background: rgba(15, 23, 42, 0.92);
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    text-align: center;
+  }
+
+  .author-cta-btn {
+    display: inline-block;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 700;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    color: white;
+    background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+  }
   }
 
   .app.night .day-range,

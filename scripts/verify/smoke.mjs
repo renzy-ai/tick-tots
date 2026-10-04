@@ -32,7 +32,7 @@ const cfgNames = (c) => JSON.stringify((c?.a || []).map((x) => x.n));
   ok('1 清存储直开 #/view → 落设置页', hash === '#/', 'hash=' + hash);
   const rows = await page.locator('.node-row').count();
   ok('2 首屏预填 3 岁模板 7 节点（非空白表单）', rows === 7, 'rows=' + rows);
-  ok('3 设置页隐私声明可见', await page.getByText('所有数据只存在你自己的设备上').first().isVisible());
+  ok('3 设置页隐私声明可见', await page.getByText('默认不上传任何信息').first().isVisible());
   let beepOff = true;
   for (const b of await page.locator('input[type=checkbox]').all()) {
     const label = await b.evaluate((el) => el.closest('label')?.textContent || '');
