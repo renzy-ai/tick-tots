@@ -497,13 +497,8 @@
 
     <!-- 手机竖屏：一次性提示条（几秒淡出，不糊满屏、不挡操作） -->
     {#if rotateHint}
-      <div class="rotate-pill">横屏看得更清楚 · 转不动？开「自动旋转」或点  直接横屏</div>
+      <div class="rotate-pill">横屏看得更清楚 · 转不动？开「自动旋转」或点 🔄 直接横屏</div>
     {/if}
-
-    <!-- 展示页底部：用上了？跟作者说一声（跟随控件显隐） -->
-    <div class="author-cta" class:hidden={!controlsVisible}>
-      <button class="author-cta-btn" onclick={() => (authorOpen = true)}>用上了？跟作者说一声</button>
-    </div>
   </main>
 
   <ParentPanel visible={showParentPanel} onClose={() => (showParentPanel = false)} />
