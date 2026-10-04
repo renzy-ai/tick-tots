@@ -9,7 +9,7 @@
 [![PWA Ready](https://img.shields.io/badge/PWA-Ready-5a0fc8?logo=pwa&logoColor=white)](https://web.dev/progressive-web-apps/)
 [![Node](https://img.shields.io/badge/Node-20%2B-339933?logo=node.js&logoColor=white)](https://nodejs.org)
 
-**体验链接**：（部署后在此填入正式 URL，微信里点开即用）
+**体验链接**：[https://tick-tots.app.workbuddy.host/](https://tick-tots.app.workbuddy.host/)（微信里点开即用，不注册、不装 App）
 
 ---
 
