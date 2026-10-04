@@ -20,13 +20,24 @@
     currentTime: Date;
     /** 时间轴比例尺（0~1）：0=纯等比，1=短活动最大可读放大 */
     scaleBias?: number;
+    /**
+     * 字号档位（按布局实际宽度选，由上层算好传入）：
+     * - lg：桌面/平板（默认，保持原观感）
+     * - md：手机横屏 / 矮窗口 —— SVG 随屏宽缩小，内部字号加大补回来
+     * - sm：手机竖屏 —— 宽度最窄，字号再加大 + 刻度隔一个显示
+     */
+    size?: 'lg' | 'md' | 'sm';
   }
 
-  let { config, currentNode, currentTime, scaleBias = 0.85 }: Props = $props();
+  let { config, currentNode, currentTime, scaleBias = 0.85, size = 'lg' }: Props = $props();
 
   // ====== SVG 坐标系统 ======
   const VB_W = 1000;
-  const VB_H = 300;
+  // 底部裁掉空白（睡觉节点圆底到 271）：同样宽度下时间轴更高、内容更大
+  const VB_H = 272;
+  // 睡觉弧两端的贝塞尔圆角会画到 0..VB_W 之外（控制点外凸，实际到约 -8.5..1008.5），
+  // overflow:visible 时会顶出屏幕边缘，viewBox 左右各留 12 单位把它们收进来
+  const VB_PAD = 12;
   const TRACK_Y = 115; // 黄色直条中心线
   const TRACK_H = 50; // 直条高度
   const TRACK_LEFT = 6;
@@ -150,13 +161,15 @@
 
   // ====== 小时刻度标尺（刻度精确落在段边界 = 卡片边缘，相邻过近则省略标签） ======
   let ticks = $derived.by(() => {
+    // 小屏字号大，阈值跟着放大：竖屏手机隔一个小时显示一个，避免挤成一团
+    const minGap = size === 'sm' ? 118 : size === 'md' ? 68 : 40;
     const list: { x: number; label: string; anchor: 'start' | 'middle' | 'end' }[] = [];
     const firstHour = Math.ceil(wakeMins / 60) * 60;
     let prevX = -999;
     let idx = 0;
     for (let t = firstHour; t <= sleepStartMins + 0.001; t += 60) {
       const x = timeToX(t);
-      if (x - prevX >= 40) {
+      if (x - prevX >= minGap) {
         const anchor = idx === 0 ? 'start' : 'middle';
         list.push({ x, label: minutesToTime(t), anchor });
         prevX = x;
@@ -183,6 +196,8 @@
         index: i,
         onArc: e < s,
         activity: getActivity(node.activity),
+        // 显示名优先用节点自定义名（如「早餐」），缺省回退活动默认名
+        displayName: node.name || getActivity(node.activity).name,
         state: 'future' as 'past' | 'current' | 'future',
         rect: undefined as { x: number; w: number; cx: number } | undefined
       };
@@ -232,7 +247,9 @@
 <svg
   class="timeline"
   class:night={inNight}
-  viewBox="0 0 {VB_W} {VB_H}"
+  class:size-md={size === 'md'}
+  class:size-sm={size === 'sm'}
+  viewBox="{-VB_PAD} 0 {VB_W + VB_PAD * 2} {VB_H}"
   preserveAspectRatio="xMidYMid meet"
 >
   <defs>
@@ -304,7 +321,7 @@
         class:hovered={isTip}
         role="button"
         tabindex="0"
-        aria-label={`${a.name} ${item.node.startTime} 到 ${item.node.endTime}`}
+        aria-label={`${item.displayName} ${item.node.startTime} 到 ${item.node.endTime}`}
         onmouseenter={() => (hoverIdx = i)}
         onmouseleave={() => (hoverIdx = null)}
         onclick={() => (tapIdx = tapIdx === i ? null : i)}
@@ -326,15 +343,15 @@
                  stroke-width: {item.node.required ? 3 : 2};
                  stroke-dasharray: {item.node.required ? 'none' : '5 4'}"
         />
-        <!-- 图标永远居中显示（短活动也看得见） -->
+        <!-- 图标永远居中显示（短活动也看得见）；字号走 CSS，小屏媒体查询才能放大 -->
         <text
           x={r.cx}
           y={TRACK_Y}
           class="node-icon"
-          style="font-size: {isCur ? 26 : 18}px"
+          class:current={isCur}
         >{a.icon}</text>
-        <!-- 较宽格子内显示开始时间（数字，非中文名） -->
-        {#if r.w >= 50}
+        <!-- 较宽格子内显示开始时间（数字，非中文名）；小屏字大，阈值跟着放大 -->
+        {#if r.w >= (size === 'sm' ? 110 : 50)}
           <text x={r.cx} y={TRACK_Y + 16} class="node-time">{item.node.startTime}</text>
         {/if}
       </g>
@@ -351,7 +368,7 @@
       {@const tx = Math.min(Math.max(r.cx, tw / 2 + 4), VB_W - tw / 2 - 4)}
       <g class="tooltip">
         <rect x={tx - tw / 2} y={2} width={tw} height={38} rx="10" class="tooltip-bg" />
-        <text x={tx} y={19} class="tooltip-name" text-anchor="middle">{a.name}</text>
+        <text x={tx} y={19} class="tooltip-name" text-anchor="middle">{tip.displayName}</text>
         <text x={tx} y={34} class="tooltip-time" text-anchor="middle">{tip.node.startTime}–{tip.node.endTime}</text>
       </g>
     {/if}
@@ -365,7 +382,7 @@
         <circle cx={sleepNodePos.x} cy={sleepNodePos.y} r="28" class="sleep-node-bg" />
         <text x={sleepNodePos.x} y={sleepNodePos.y + 3} class="sleep-node-icon">{a.icon}</text>
         <text x={sleepNodePos.x + 40} y={sleepNodePos.y + 7} class="sleep-node-label">
-          {a.name} {item.node.startTime}→{item.node.endTime}
+          {item.displayName} {item.node.startTime}→{item.node.endTime}
         </text>
       </g>
     {/if}
@@ -389,7 +406,8 @@
   .timeline {
     width: 100%;
     height: auto;
-    max-height: 50vh;
+    /* 上层按布局实际高度给 --tl-max-h（内容横屏 / 矮窗口时不让 vh 单位算错） */
+    max-height: var(--tl-max-h, 50vh);
     display: block;
     overflow: visible;
   }
@@ -434,10 +452,15 @@
   .ruler-label {
     font-family: var(--font-num);
     font-size: 15px;
-    font-weight: 600;
+    font-weight: 800;
     fill: var(--track-ruler-label);
     text-anchor: middle;
     font-variant-numeric: tabular-nums;
+    /* 白色描边光环：彩色背景上细字看不清，加粗 + 光环后任何底色都读得出 */
+    paint-order: stroke;
+    stroke: rgba(255, 255, 255, 0.92);
+    stroke-width: 3.5px;
+    stroke-linejoin: round;
   }
 
   /* ---- 活动格子 ---- */
@@ -467,6 +490,82 @@
   .node-icon {
     text-anchor: middle;
     dominant-baseline: middle;
+    font-size: 18px;
+  }
+
+  .node-icon.current {
+    font-size: 26px;
+  }
+
+  /* 字号档位：lg=桌面/平板原样；md=手机横屏/矮窗口；sm=手机竖屏（按上层传入，不用媒体查询——内容横屏时媒体查询会算错） */
+  .timeline.size-md .ruler-label {
+    font-size: 20px;
+    stroke-width: 4px;
+  }
+
+  .timeline.size-md .node-icon {
+    font-size: 24px;
+  }
+
+  .timeline.size-md .node-icon.current {
+    font-size: 32px;
+  }
+
+  .timeline.size-md .node-time {
+    font-size: 16px;
+  }
+
+  .timeline.size-md .tooltip-name {
+    font-size: 18px;
+  }
+
+  .timeline.size-md .tooltip-time {
+    font-size: 15px;
+  }
+
+  .timeline.size-md .sleep-node-icon {
+    font-size: 34px;
+  }
+
+  .timeline.size-md .sleep-node-label {
+    font-size: 22px;
+    stroke-width: 4px;
+  }
+
+  .timeline.size-sm .ruler-label {
+    font-size: 34px;
+    stroke-width: 6px;
+  }
+
+  .timeline.size-sm .node-icon {
+    font-size: 42px;
+  }
+
+  .timeline.size-sm .node-icon.current {
+    font-size: 52px;
+  }
+
+  .timeline.size-sm .node-time {
+    font-size: 28px;
+    stroke-width: 5px;
+  }
+
+  .timeline.size-sm .tooltip-name {
+    font-size: 32px;
+  }
+
+  .timeline.size-sm .tooltip-time {
+    font-size: 26px;
+    stroke-width: 4px;
+  }
+
+  .timeline.size-sm .sleep-node-icon {
+    font-size: 56px;
+  }
+
+  .timeline.size-sm .sleep-node-label {
+    font-size: 34px;
+    stroke-width: 6px;
   }
 
   /* 悬浮 / 点按高亮 */
@@ -504,10 +603,15 @@
   .node-time {
     font-family: var(--font-num);
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 800;
     fill: rgba(255, 255, 255, 0.95);
     text-anchor: middle;
     font-variant-numeric: tabular-nums;
+    /* 深色描边光环：白字压在亮色格子上才不发虚 */
+    paint-order: stroke;
+    stroke: rgba(15, 23, 42, 0.45);
+    stroke-width: 3px;
+    stroke-linejoin: round;
   }
 
   /* ---- 睡觉节点 ---- */
@@ -529,8 +633,12 @@
 
   .sleep-node-label {
     font-size: 18px;
-    font-weight: 700;
+    font-weight: 800;
     fill: #2f6fb5;
+    paint-order: stroke;
+    stroke: rgba(255, 255, 255, 0.92);
+    stroke-width: 3px;
+    stroke-linejoin: round;
   }
 
   /* ---- 游标 ---- */
@@ -566,14 +674,16 @@
 
   .timeline.night .ruler-label {
     fill: var(--night-track-ruler-label);
-  }
-
-  .timeline.night .sleep-area {
-    opacity: var(--night-sleep-arc-opacity);
+    stroke: rgba(10, 14, 30, 0.55);
   }
 
   .timeline.night .sleep-node-label {
     fill: var(--night-text);
+    stroke: rgba(10, 14, 30, 0.55);
+  }
+
+  .timeline.night .sleep-area {
+    opacity: var(--night-sleep-arc-opacity);
   }
 
   /* 夜间 tooltip 反相：浅底深字，否则深色气泡糊在深色背景里 */

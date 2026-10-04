@@ -7,7 +7,18 @@ dist/
 # 运行时用户数据（家长面板里改的作息，每次运行都会变，不提交）
 server/data/state.json
 
+# 本地环境变量 / 密钥（即使现在没有，也先堵住误提交路径）
+.env
+.env.*
+
+# 日志
+*.log
+npm-debug.log*
+
 # 系统/编辑器垃圾文件
 .DS_Store
 Thumbs.db
 *.local
+
+# agent 交接过程件（本机保留阅读，不进版本库）
+HANDOFF.md
