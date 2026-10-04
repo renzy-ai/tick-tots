@@ -468,11 +468,10 @@
       </div>
     {/if}
 
-    <!-- 展示页控件：全屏 / 分享 / 回设置（5 秒无操作淡出） -->
+    <!-- 展示页控件：跟作者说一声 / 分享 / 全屏 / 设置（5 秒无操作淡出） -->
     <div class="view-controls" class:hidden={!controlsVisible}>
-      {#if shareFromSession}
-        <button class="view-btn" onclick={() => (shareOpen = true)} aria-label="分享给家人" title="分享给家人">🔗</button>
-      {/if}
+      <button class="view-btn" onclick={() => (authorOpen = true)} aria-label="用上了？跟作者说一声" title="用上了？跟作者说一声">📢</button>
+      <button class="view-btn" onclick={() => (shareOpen = true)} aria-label="分享给家人" title="分享给家人">🔗</button>
       {#if contentRotated || (screenPortrait && vpW <= 900)}
         <button
           class="view-btn"
@@ -982,33 +981,6 @@
   /* 辅助文字改走夜间 token：纯白在 #1a1a2e 上刺眼，睡前看屏幕会越看越精神 */
   .app.night .wall-clock {
     color: var(--night-text);
-  }
-
-  /* ---- 展示页底部「跟作者说一声」按钮 ---- */
-  .author-cta {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 20;
-    padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
-    background: rgba(15, 23, 42, 0.92);
-    border-top: 1px solid rgba(255, 255, 255, 0.12);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    text-align: center;
-  }
-
-  .author-cta-btn {
-    display: inline-block;
-    padding: 10px 20px;
-    font-size: 14px;
-    font-weight: 700;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    color: white;
-    background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
   }
 
   .app.night .day-range,
