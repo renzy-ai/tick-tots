@@ -420,6 +420,7 @@
     <button class="btn primary big" onclick={handleGenerate}>生成我家的时间轴</button>
     <div class="sub-actions">
       <button class="btn ghost" onclick={openShare}>🔗 分享链接 / 二维码</button>
+      <button class="btn primary" onclick={() => (authorOpen = true)}>📢 用上了？跟作者说一声</button>
     </div>
   </section>
 

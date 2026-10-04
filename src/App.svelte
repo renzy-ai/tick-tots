@@ -500,8 +500,8 @@
       <div class="rotate-pill">横屏看得更清楚 · 转不动？开「自动旋转」或点  直接横屏</div>
     {/if}
 
-    <!-- 展示页底部：用上了？跟作者说一声 -->
-    <div class="author-cta">
+    <!-- 展示页底部：用上了？跟作者说一声（跟随控件显隐） -->
+    <div class="author-cta" class:hidden={!controlsVisible}>
       <button class="author-cta-btn" onclick={() => (authorOpen = true)}>用上了？跟作者说一声</button>
     </div>
   </main>
@@ -1014,7 +1014,6 @@
     cursor: pointer;
     color: white;
     background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
-  }
   }
 
   .app.night .day-range,
